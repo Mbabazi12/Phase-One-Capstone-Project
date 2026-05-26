@@ -1,43 +1,61 @@
 package com.igirepay.lab1.service;
 
+import com.igirepay.lab1.model.Account;
 import com.igirepay.lab1.model.Customer;
+import com.igirepay.lab2.dao.AccountDAO;
+import com.igirepay.lab2.dao.CustomerDAO;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 public class CustomerService {
-    private final Map<String, Customer> customersByPhone;
-    private final Map<UUID, Customer> customersById;
+    private final CustomerDAO customerDAO;
+    private final AccountDAO accountDAO;
 
     public CustomerService() {
-        this.customersByPhone = new LinkedHashMap<>();
-        this.customersById = new LinkedHashMap<>();
+        this.customerDAO = new CustomerDAO();
+        this.accountDAO = new AccountDAO();
     }
 
     public Customer save(Customer customer) {
         if (customer == null) {
             throw new IllegalArgumentException("Customer is required.");
         }
-        customersByPhone.put(customer.getPhoneNumber(), customer);
-        customersById.put(customer.getCustomerId(), customer);
-        return customer;
+        return attachAccounts(customerDAO.create(customer));
     }
 
     public Optional<Customer> findByPhone(String phone) {
         String normalizedPhone = phone == null ? "" : phone.trim();
-        return Optional.ofNullable(customersByPhone.get(normalizedPhone));
+        return customerDAO.findByPhone(normalizedPhone).map(this::attachAccounts);
     }
 
     public Optional<Customer> findById(UUID id) {
-        return Optional.ofNullable(customersById.get(id));
+        return customerDAO.findById(id).map(this::attachAccounts);
     }
 
     public List<Customer> getAllCustomers() {
-        return Collections.unmodifiableList(new ArrayList<>(customersById.values()));
+        return customerDAO.findAll().stream()
+                .map(this::attachAccounts)
+                .toList();
+    }
+
+    public void update(Customer customer) {
+        customerDAO.update(customer);
+        for (Account account : customer.getAccounts()) {
+            accountDAO.updateHashedPin(account.getAccountId(), customer.getHashedPin());
+        }
+    }
+
+    public Customer refresh(Customer customer) {
+        if (customer == null) {
+            return null;
+        }
+        return findById(customer.getCustomerId()).orElse(customer);
+    }
+
+    private Customer attachAccounts(Customer customer) {
+        customer.setAccounts(accountDAO.findByCustomerId(customer.getCustomerId()));
+        return customer;
     }
 }

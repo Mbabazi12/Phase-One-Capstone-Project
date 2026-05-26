@@ -1,4 +1,4 @@
-package com.igirepay.lab1.model;
+package com.igirepay.lab1.exceptions;
 
 public class InvalidPinException extends RuntimeException {
     private final int attemptsRemaining;

@@ -1,5 +1,6 @@
 package com.igirepay.lab1.model;
 
+import com.igirepay.lab1.exceptions.InvalidPhoneNumberException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

@@ -1,4 +1,4 @@
-package com.igirepay.lab1.model;
+package com.igirepay.lab1.exceptions;
 
 public class WithdrawalLimitExceededException extends RuntimeException {
     private final int dailyLimit;

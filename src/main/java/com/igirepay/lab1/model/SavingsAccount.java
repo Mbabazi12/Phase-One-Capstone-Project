@@ -1,5 +1,7 @@
 package com.igirepay.lab1.model;
 
+import com.igirepay.lab1.exceptions.InvalidAmountException;
+import com.igirepay.lab1.exceptions.WithdrawalLimitExceededException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
