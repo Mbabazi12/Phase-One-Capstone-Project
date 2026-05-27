@@ -54,11 +54,6 @@
                     maxWidth="Infinity"
                     style="-fx-background-color: #3d566e; -fx-text-fill: white;
                            -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Reports"
-                    onAction="#handleReports"
-                    maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
             <Button text="Manage Accounts"
                     onAction="#handleManageAccounts"
                     maxWidth="Infinity"
