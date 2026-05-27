@@ -122,6 +122,19 @@ public class AccountDAO {
         }
     }
 
+    public void activate(int accountId) {
+        String sql = "UPDATE accounts SET is_active = TRUE WHERE account_id = ?";
+        Connection connection = DBConnection.getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, accountId);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not activate account", exception);
+        } finally {
+            closeIfStandalone(connection);
+        }
+    }
+
     private Account mapAccount(ResultSet resultSet) throws SQLException {
         AccountType accountType = AccountType.valueOf(resultSet.getString("account_type"));
         int accountId   = resultSet.getInt("account_id");

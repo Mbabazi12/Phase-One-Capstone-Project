@@ -28,7 +28,7 @@ public class AccountController {
 
     public AccountController() {
         this.accountService = new AccountService();
-        this.accountDAO = new AccountDAO();
+        this.accountDAO     = new AccountDAO();
         this.customerService = new CustomerService();
     }
 
@@ -44,10 +44,10 @@ public class AccountController {
         try {
             accountService.createWallet(customer);
             refreshSession();
-            messageLabel.setText("Wallet account created.");
+            setSuccess("Wallet account created.");
             refreshList();
         } catch (IllegalStateException e) {
-            messageLabel.setText(e.getMessage());
+            setError(e.getMessage());
         } catch (DatabaseException e) {
             showError("Database error. Please try again.");
         }
@@ -60,36 +60,68 @@ public class AccountController {
         try {
             accountService.createSavings(customer);
             refreshSession();
-            messageLabel.setText("Savings account created.");
+            setSuccess("Savings account created.");
             refreshList();
         } catch (IllegalStateException e) {
-            messageLabel.setText(e.getMessage());
+            setError(e.getMessage());
         } catch (DatabaseException e) {
             showError("Database error. Please try again.");
         }
     }
 
     @FXML
-    private void handleDeleteSelected() {
+    private void handleDeactivateSelected() {
         messageLabel.setText("");
         int selectedIndex = accountListView.getSelectionModel().getSelectedIndex();
         if (selectedIndex < 0) {
-            messageLabel.setText("Select an account to delete.");
+            setError("Select an account first.");
             return;
         }
 
         Customer customer = SessionManager.getCurrentCustomer();
         Account account = customer.getAccounts().get(selectedIndex);
 
+        if (!account.isActive()) {
+            setError("Account is already inactive.");
+            return;
+        }
+
         if (account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
-            messageLabel.setText("Cannot delete account with non-zero balance.");
+            setError("Cannot deactivate an account with a non-zero balance.");
             return;
         }
 
         try {
             accountDAO.deactivate(account.getAccountId());
             refreshSession();
-            messageLabel.setText("Account deactivated.");
+            setSuccess("Account deactivated.");
+            refreshList();
+        } catch (DatabaseException e) {
+            showError("Database error. Please try again.");
+        }
+    }
+
+    @FXML
+    private void handleReactivateSelected() {
+        messageLabel.setText("");
+        int selectedIndex = accountListView.getSelectionModel().getSelectedIndex();
+        if (selectedIndex < 0) {
+            setError("Select an account first.");
+            return;
+        }
+
+        Customer customer = SessionManager.getCurrentCustomer();
+        Account account = customer.getAccounts().get(selectedIndex);
+
+        if (account.isActive()) {
+            setError("Account is already active.");
+            return;
+        }
+
+        try {
+            accountDAO.activate(account.getAccountId());
+            refreshSession();
+            setSuccess("Account reactivated successfully.");
             refreshList();
         } catch (DatabaseException e) {
             showError("Database error. Please try again.");
@@ -105,10 +137,11 @@ public class AccountController {
         Customer customer = SessionManager.getCurrentCustomer();
         accountListView.getItems().clear();
         for (Account account : customer.getAccounts()) {
+            String status = account.isActive() ? "ACTIVE" : "INACTIVE";
             String entry = account.getAccountType().name()
                     + " | ID: " + account.getAccountId()
                     + " | Balance: " + account.getBalance().setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF"
-                    + (account.isActive() ? "" : " [INACTIVE]");
+                    + " | " + status;
             accountListView.getItems().add(entry);
         }
     }
@@ -116,6 +149,16 @@ public class AccountController {
     private void refreshSession() {
         Customer refreshed = customerService.refresh(SessionManager.getCurrentCustomer());
         SessionManager.setCurrentCustomer(refreshed);
+    }
+
+    private void setSuccess(String message) {
+        messageLabel.setStyle("-fx-text-fill: green;");
+        messageLabel.setText(message);
+    }
+
+    private void setError(String message) {
+        messageLabel.setStyle("-fx-text-fill: red;");
+        messageLabel.setText(message);
     }
 
     private void showError(String message) {
