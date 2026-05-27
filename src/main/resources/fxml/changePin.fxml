@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.ChangePinController"
+            fitToWidth="true" fitToHeight="false"
+            style="-fx-padding: 0;">
+
+    <VBox alignment="CENTER" spacing="14" style="-fx-padding: 60;" minWidth="400">
+
+        <Label text="Change PIN" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+
+        <Label text="Current PIN"/>
+        <PasswordField fx:id="currentPinField" promptText="Current PIN" maxWidth="320"/>
+
+        <Label text="New PIN (5 digits)"/>
+        <PasswordField fx:id="newPinField" promptText="New PIN" maxWidth="320"/>
+
+        <Label text="Confirm New PIN"/>
+        <PasswordField fx:id="confirmPinField" promptText="Confirm new PIN" maxWidth="320"/>
+
+        <Label fx:id="messageLabel" style="-fx-text-fill: green;" text=""/>
+
+        <HBox spacing="10" alignment="CENTER">
+            <Button text="Update PIN" onAction="#handleUpdatePin" prefWidth="140"/>
+            <Button text="Back"       onAction="#handleBack"      prefWidth="100"/>
+        </HBox>
+    </VBox>
+</ScrollPane>

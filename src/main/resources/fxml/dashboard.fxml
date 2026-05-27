@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.DashboardController">
+
+    <top>
+        <VBox style="-fx-padding: 20 20 10 20; -fx-spacing: 6;">
+            <Label fx:id="welcomeLabel" style="-fx-font-size: 20; -fx-font-weight: bold;"/>
+            <Label text="Your Accounts" style="-fx-font-size: 13;"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="true" style="-fx-padding: 0 20 0 20;">
+            <TableView fx:id="accountsTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colAccountId"   text="Account ID"   prefWidth="340"/>
+                    <TableColumn fx:id="colAccountType" text="Type"         prefWidth="100"/>
+                    <TableColumn fx:id="colBalance"     text="Balance"      prefWidth="160"/>
+                </columns>
+            </TableView>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="NEVER">
+            <HBox spacing="10" style="-fx-padding: 16; -fx-alignment: center;">
+                <Button text="Deposit / Withdraw / Transfer" onAction="#handleDeposit"        prefWidth="200"/>
+                <Button text="Transaction History"           onAction="#handleHistory"         prefWidth="160"/>
+                <Button text="Reports"                       onAction="#handleReports"         prefWidth="100"/>
+                <Button text="Manage Accounts"               onAction="#handleManageAccounts"  prefWidth="140"/>
+                <Button text="Change PIN"                    onAction="#handleChangePin"       prefWidth="110"/>
+                <Button text="Logout"                        onAction="#handleLogout"          prefWidth="90"/>
+            </HBox>
+        </ScrollPane>
+    </bottom>
+</BorderPane>

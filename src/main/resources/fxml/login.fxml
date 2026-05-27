@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.LoginController"
+            fitToWidth="true" fitToHeight="true"
+            style="-fx-padding: 0;">
+
+    <VBox alignment="CENTER" spacing="16" style="-fx-padding: 60;" minWidth="400">
+
+        <Label text="IgirePay Wallet System" style="-fx-font-size: 24; -fx-font-weight: bold;"/>
+        <Label text="Sign in to your account" style="-fx-font-size: 14;"/>
+
+        <GridPane hgap="10" vgap="10" maxWidth="320">
+            <columnConstraints>
+                <ColumnConstraints minWidth="110"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <Label text="Phone Number:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="phoneField" promptText="10-digit phone number"
+                       GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="PIN:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <PasswordField fx:id="pinField" promptText="5-digit PIN"
+                           GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        </GridPane>
+
+        <Label fx:id="errorLabel" style="-fx-text-fill: red;" text=""/>
+
+        <Button fx:id="loginButton" text="Login" onAction="#handleLogin" prefWidth="320"/>
+        <Button fx:id="registerButton" text="Register new account" onAction="#handleGoToRegister" prefWidth="320"/>
+    </VBox>
+</ScrollPane>

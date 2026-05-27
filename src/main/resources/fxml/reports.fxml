@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.ReportController">
+
+    <top>
+        <VBox style="-fx-padding: 20 20 10 20; -fx-spacing: 10;">
+            <Label text="Reports" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+
+            <HBox spacing="10" style="-fx-alignment: center-left;">
+                <Label text="Account:"/>
+                <ComboBox fx:id="accountCombo" promptText="Select account" prefWidth="280"/>
+            </HBox>
+
+            <HBox spacing="10">
+                <Button text="View Today's Summary" onAction="#handleDailySummary"  prefWidth="180"/>
+                <Button text="Export to CSV"        onAction="#handleExportCSV"     prefWidth="140"/>
+                <Button text="Full Statement"       onAction="#handleFullStatement" prefWidth="140"/>
+            </HBox>
+
+            <Label fx:id="summaryLabel" style="-fx-font-size: 13;" text="" wrapText="true"/>
+            <Label fx:id="exportLabel"  style="-fx-text-fill: green;" text=""/>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="statementTable">
+            <columns>
+                <TableColumn fx:id="colTxId"           text="TX ID"          prefWidth="110"/>
+                <TableColumn fx:id="colRefId"          text="Ref ID"         prefWidth="110"/>
+                <TableColumn fx:id="colType"           text="Type"           prefWidth="110"/>
+                <TableColumn fx:id="colAmount"         text="Amount"         prefWidth="120"/>
+                <TableColumn fx:id="colRunningBalance" text="Running Balance" prefWidth="140"/>
+                <TableColumn fx:id="colDate"           text="Date"           prefWidth="150"/>
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox style="-fx-padding: 12;">
+            <Button text="Back to Dashboard" onAction="#handleBack" prefWidth="160"/>
+        </HBox>
+    </bottom>
+</BorderPane>

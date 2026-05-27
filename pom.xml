@@ -138,7 +138,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                com.igirepay/com.igirepay.Main
+                                com.igirepay/com.igirepay.lab3.ui.Launcher
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>

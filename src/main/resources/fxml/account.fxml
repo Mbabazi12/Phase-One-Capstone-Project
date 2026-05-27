@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.AccountController"
+            fitToWidth="true" fitToHeight="false"
+            style="-fx-padding: 0;">
+
+    <VBox spacing="14" style="-fx-padding: 40;" minWidth="400">
+
+        <Label text="Account Management" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+
+        <HBox spacing="10">
+            <Button text="Create Wallet Account"  onAction="#handleCreateWallet"  prefWidth="180"/>
+            <Button text="Create Savings Account" onAction="#handleCreateSavings" prefWidth="180"/>
+        </HBox>
+
+        <Label text="Your Accounts (select to delete):"/>
+        <ListView fx:id="accountListView" prefHeight="260"/>
+
+        <Button text="Delete Selected Account" onAction="#handleDeleteSelected" prefWidth="200"/>
+
+        <Label fx:id="messageLabel" style="-fx-text-fill: green;" text=""/>
+
+        <Button text="Back to Dashboard" onAction="#handleBack" prefWidth="160"/>
+    </VBox>
+</ScrollPane>
