@@ -1,14 +1,13 @@
 package com.igirepay.lab1.service;
 
+import java.time.LocalDateTime;
+
 import com.igirepay.lab1.exceptions.AccountNotFoundException;
 import com.igirepay.lab1.exceptions.InvalidPhoneNumberException;
 import com.igirepay.lab1.exceptions.InvalidPinException;
 import com.igirepay.lab1.exceptions.InvalidPinFormatException;
 import com.igirepay.lab1.model.Customer;
 import com.igirepay.lab2.dao.CustomerDAO;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class AuthService {
 
@@ -26,7 +25,8 @@ public class AuthService {
         if (customerDAO.findByPhone(normalizedPhone).isPresent()) {
             throw new IllegalArgumentException("A customer already exists with phone number " + normalizedPhone + ".");
         }
-        Customer customer = new Customer(UUID.randomUUID(), fullName, normalizedPhone, pin, LocalDateTime.now());
+        // customerId = 0; DB will assign the real SERIAL id via RETURN_GENERATED_KEYS
+        Customer customer = new Customer(0, fullName, normalizedPhone, pin, LocalDateTime.now());
         customerDAO.create(customer);
         return customerService.refresh(customer);
     }

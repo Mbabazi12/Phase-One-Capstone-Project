@@ -28,7 +28,7 @@ public class DashboardController {
         welcomeLabel.setText("Welcome, " + customer.getFullName());
 
         colAccountId.setCellValueFactory(data ->
-                new SimpleStringProperty(data.getValue().getAccountId().toString()));
+                new SimpleStringProperty(String.valueOf(data.getValue().getAccountId())));
         colAccountType.setCellValueFactory(data ->
                 new SimpleStringProperty(data.getValue().getAccountType().name()));
         colBalance.setCellValueFactory(data ->

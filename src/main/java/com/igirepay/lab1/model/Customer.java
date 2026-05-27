@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public class Customer {
-    private UUID customerId;
+    private int customerId;
     private String fullName;
     private String phoneNumber;
     private String hashedPin;
@@ -17,16 +16,16 @@ public class Customer {
     private LocalDateTime createdAt;
 
     public Customer() {
-        this(UUID.randomUUID(), "Unknown Customer", "0000000000", "", LocalDateTime.now());
+        this(0, "Unknown Customer", "0000000000", "", LocalDateTime.now());
     }
 
     public Customer(String fullName, String phoneNumber, String hashedPin) {
-        this(UUID.randomUUID(), fullName, phoneNumber, hashedPin, LocalDateTime.now());
+        this(0, fullName, phoneNumber, hashedPin, LocalDateTime.now());
     }
 
-    public Customer(UUID customerId, String fullName, String phoneNumber, String hashedPin,
+    public Customer(int customerId, String fullName, String phoneNumber, String hashedPin,
                     LocalDateTime createdAt) {
-        setCustomerId(customerId);
+        this.customerId = customerId;
         setFullName(fullName);
         setPhoneNumber(phoneNumber);
         setHashedPin(hashedPin);
@@ -34,10 +33,10 @@ public class Customer {
         this.accounts = new ArrayList<>();
     }
 
-    public UUID getCustomerId() { return customerId; }
+    public int getCustomerId() { return customerId; }
 
-    public void setCustomerId(UUID customerId) {
-        this.customerId = customerId == null ? UUID.randomUUID() : customerId;
+    public void setCustomerId(int customerId) {
+        this.customerId = customerId;
     }
 
     public String getFullName() { return fullName; }
@@ -91,8 +90,8 @@ public class Customer {
         return accounts.stream().filter(a -> a.getAccountType() == accountType).findFirst();
     }
 
-    public Optional<Account> getAccountById(UUID accountId) {
-        return accounts.stream().filter(a -> a.getAccountId().equals(accountId)).findFirst();
+    public Optional<Account> getAccountById(int accountId) {
+        return accounts.stream().filter(a -> a.getAccountId() == accountId).findFirst();
     }
 
     public boolean validatePin(String rawPin) {

@@ -1,5 +1,15 @@
 package com.igirepay;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.UUID;
+
 import com.igirepay.lab1.exceptions.AccountLockedException;
 import com.igirepay.lab1.exceptions.AccountNotFoundException;
 import com.igirepay.lab1.exceptions.DatabaseException;
@@ -18,16 +28,6 @@ import com.igirepay.lab1.service.AuthService;
 import com.igirepay.lab1.service.CustomerService;
 import com.igirepay.lab1.service.TransactionService;
 import com.igirepay.lab2.service.ReportService;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.UUID;
 
 public class Main {
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.00");

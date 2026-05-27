@@ -1,5 +1,13 @@
 package com.igirepay.lab1.service;
 
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import com.igirepay.lab1.exceptions.AccountNotFoundException;
 import com.igirepay.lab1.exceptions.DatabaseException;
 import com.igirepay.lab1.exceptions.InsufficientBalanceException;
@@ -16,15 +24,6 @@ import com.igirepay.lab1.model.WalletAccount;
 import com.igirepay.lab2.config.DBConnection;
 import com.igirepay.lab2.dao.AccountDAO;
 import com.igirepay.lab2.dao.TransactionDAO;
-
-import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 
 public class TransactionService {
     private final AccountDAO accountDAO;
@@ -82,10 +81,7 @@ public class TransactionService {
         }
     }
 
-    /**
-     * Transfer between wallet accounts of different customers.
-     * Savings accounts cannot transfer to other users.
-     */
+    /** Transfer between wallet accounts of different customers. Savings cannot transfer externally. */
     public List<Transaction> transfer(Account sender, String recipientPhone, BigDecimal amount, String pin,
                                       String referenceId, CustomerService customerService) {
         if (sender.getAccountType() == AccountType.SAVINGS) {
@@ -98,7 +94,7 @@ public class TransactionService {
             Account workingSender = loadAccount(sender);
             Customer recipient = findRecipient(recipientPhone, customerService);
 
-            if (workingSender.getCustomerId().equals(recipient.getCustomerId())) {
+            if (workingSender.getCustomerId() == recipient.getCustomerId()) {
                 throw new IllegalArgumentException("Cannot transfer to yourself. Use savings deposit instead.");
             }
 
@@ -122,13 +118,14 @@ public class TransactionService {
 
             Transaction transferIn = new Transaction(ref, workingRecipient.getAccountId(),
                     workingSender.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount,
-                    "Transfer from " + workingSender.getCustomerId());
+                    "Transfer from account " + workingSender.getAccountId());
             workingRecipient.processTransaction(transferIn);
             transactionDAO.create(transferIn);
             transactions.add(transferIn);
 
             Transaction feeTransaction = new Transaction(ref, workingSender.getAccountId(),
-                    null, TransactionType.FEE, fee, "Transfer fee (1% of " + normalizedAmount.toPlainString() + ")");
+                    0, TransactionType.FEE, fee,
+                    "Transfer fee (1% of " + normalizedAmount.toPlainString() + ")");
             workingSender.processTransaction(feeTransaction);
             transactionDAO.create(feeTransaction);
             transactions.add(feeTransaction);
@@ -147,25 +144,20 @@ public class TransactionService {
         }
     }
 
-    /**
-     * Move money from wallet to own savings account.
-     */
+    /** Move money from wallet to own savings account (no fee). */
     public Transaction moveToSavings(Account walletAccount, Account savingsAccount,
                                      BigDecimal amount, String pin, String referenceId) {
-        if (walletAccount.getAccountType() != AccountType.WALLET) {
+        if (walletAccount.getAccountType() != AccountType.WALLET)
             throw new IllegalArgumentException("Source must be a wallet account.");
-        }
-        if (savingsAccount.getAccountType() != AccountType.SAVINGS) {
+        if (savingsAccount.getAccountType() != AccountType.SAVINGS)
             throw new IllegalArgumentException("Destination must be a savings account.");
-        }
-        if (!walletAccount.getCustomerId().equals(savingsAccount.getCustomerId())) {
+        if (walletAccount.getCustomerId() != savingsAccount.getCustomerId())
             throw new IllegalArgumentException("Both accounts must belong to the same customer.");
-        }
 
         Connection connection = beginTransaction();
         try {
             String ref = requireReference(referenceId);
-            Account workingWallet = loadAccount(walletAccount);
+            Account workingWallet  = loadAccount(walletAccount);
             Account workingSavings = loadAccount(savingsAccount);
 
             validateAccountPin(workingWallet, pin);
@@ -173,14 +165,12 @@ public class TransactionService {
             ensureSufficientBalance(workingWallet, normalizedAmount);
 
             Transaction out = new Transaction(ref, workingWallet.getAccountId(),
-                    workingSavings.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount,
-                    "Move to savings");
+                    workingSavings.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount, "Move to savings");
             workingWallet.processTransaction(out);
             transactionDAO.create(out);
 
             Transaction in = new Transaction(ref, workingSavings.getAccountId(),
-                    workingWallet.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount,
-                    "Received from wallet");
+                    workingWallet.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount, "Received from wallet");
             workingSavings.processTransaction(in);
             transactionDAO.create(in);
 
@@ -199,26 +189,21 @@ public class TransactionService {
         }
     }
 
-    /**
-     * Move money from savings back to own wallet account.
-     */
+    /** Move money from savings back to own wallet account (no fee). */
     public Transaction moveToWallet(Account savingsAccount, Account walletAccount,
                                     BigDecimal amount, String pin, String referenceId) {
-        if (savingsAccount.getAccountType() != AccountType.SAVINGS) {
+        if (savingsAccount.getAccountType() != AccountType.SAVINGS)
             throw new IllegalArgumentException("Source must be a savings account.");
-        }
-        if (walletAccount.getAccountType() != AccountType.WALLET) {
+        if (walletAccount.getAccountType() != AccountType.WALLET)
             throw new IllegalArgumentException("Destination must be a wallet account.");
-        }
-        if (!savingsAccount.getCustomerId().equals(walletAccount.getCustomerId())) {
+        if (savingsAccount.getCustomerId() != walletAccount.getCustomerId())
             throw new IllegalArgumentException("Both accounts must belong to the same customer.");
-        }
 
         Connection connection = beginTransaction();
         try {
             String ref = requireReference(referenceId);
             Account workingSavings = loadAccount(savingsAccount);
-            Account workingWallet = loadAccount(walletAccount);
+            Account workingWallet  = loadAccount(walletAccount);
 
             validateAccountPin(workingSavings, pin);
             BigDecimal normalizedAmount = requirePositiveAmount(amount);
@@ -226,14 +211,12 @@ public class TransactionService {
             ensureSavingsWithdrawalLimit(workingSavings);
 
             Transaction out = new Transaction(ref, workingSavings.getAccountId(),
-                    workingWallet.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount,
-                    "Move to wallet");
+                    workingWallet.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount, "Move to wallet");
             workingSavings.processTransaction(out);
             transactionDAO.create(out);
 
             Transaction in = new Transaction(ref, workingWallet.getAccountId(),
-                    workingSavings.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount,
-                    "Received from savings");
+                    workingSavings.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount, "Received from savings");
             workingWallet.processTransaction(in);
             transactionDAO.create(in);
 
@@ -268,13 +251,15 @@ public class TransactionService {
         }
     }
 
-    public List<Transaction> getHistory(UUID accountId) {
+    public List<Transaction> getHistory(int accountId) {
         return Collections.unmodifiableList(transactionDAO.findByAccountId(accountId));
     }
 
-    public List<Transaction> getDailyWithdrawals(UUID accountId, LocalDate date) {
+    public List<Transaction> getDailyWithdrawals(int accountId, LocalDate date) {
         return Collections.unmodifiableList(transactionDAO.findDailyWithdrawals(accountId, date));
     }
+
+    // ── private helpers ──────────────────────────────────────────────────────
 
     private String requireReference(String referenceId) {
         String normalized = referenceId == null ? "" : referenceId.trim();
@@ -311,7 +296,8 @@ public class TransactionService {
 
     private BigDecimal requirePositiveAmount(BigDecimal amount) {
         BigDecimal normalized = amount == null ? BigDecimal.ZERO : amount.stripTrailingZeros();
-        if (normalized.compareTo(BigDecimal.ZERO) <= 0) throw new InvalidAmountException("Amount must be greater than zero.");
+        if (normalized.compareTo(BigDecimal.ZERO) <= 0)
+            throw new InvalidAmountException("Amount must be greater than zero.");
         return normalized;
     }
 
@@ -338,7 +324,7 @@ public class TransactionService {
 
     private void commit(Connection connection) {
         try { connection.commit(); }
-        catch (SQLException e) { throw new DatabaseException("Could not commit database transaction", e); }
+        catch (SQLException e) { throw new DatabaseException("Could not commit transaction", e); }
     }
 
     private void rollback(Connection connection, RuntimeException original) {

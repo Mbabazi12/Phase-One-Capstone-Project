@@ -1,5 +1,8 @@
 package com.igirepay.lab3.controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import com.igirepay.lab1.exceptions.DatabaseException;
 import com.igirepay.lab1.model.Account;
 import com.igirepay.lab1.model.Customer;
@@ -8,13 +11,11 @@ import com.igirepay.lab1.service.CustomerService;
 import com.igirepay.lab2.dao.AccountDAO;
 import com.igirepay.lab3.ui.SceneManager;
 import com.igirepay.lab3.ui.SessionManager;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 public class AccountController {
 
@@ -105,7 +106,7 @@ public class AccountController {
         accountListView.getItems().clear();
         for (Account account : customer.getAccounts()) {
             String entry = account.getAccountType().name()
-                    + " | " + account.getAccountId()
+                    + " | ID: " + account.getAccountId()
                     + " | Balance: " + account.getBalance().setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF"
                     + (account.isActive() ? "" : " [INACTIVE]");
             accountListView.getItems().add(entry);

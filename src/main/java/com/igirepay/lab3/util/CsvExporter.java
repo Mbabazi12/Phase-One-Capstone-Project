@@ -1,27 +1,25 @@
 package com.igirepay.lab3.util;
 
-import com.igirepay.lab1.model.Transaction;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.UUID;
+
+import com.igirepay.lab1.model.Transaction;
 
 public class CsvExporter {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static String export(UUID accountId, List<Transaction> transactions) throws IOException {
+    public static String export(int accountId, List<Transaction> transactions) throws IOException {
         Path reportsDir = Path.of("reports");
         if (!Files.exists(reportsDir)) {
             Files.createDirectories(reportsDir);
         }
 
-        String fileName = "statement_" + accountId.toString().substring(0, 8) + "_"
-                + System.currentTimeMillis() + ".csv";
+        String fileName = "statement_acc" + accountId + "_" + System.currentTimeMillis() + ".csv";
         Path outputPath = reportsDir.resolve(fileName);
 
         try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
@@ -29,7 +27,7 @@ public class CsvExporter {
             writer.newLine();
             for (Transaction tx : transactions) {
                 writer.write(
-                        escape(tx.getTransactionId().toString()) + "," +
+                        escape(String.valueOf(tx.getTransactionId())) + "," +
                         escape(tx.getReferenceId()) + "," +
                         escape(tx.getTransactionType().name()) + "," +
                         escape(tx.getAmount().toPlainString()) + "," +

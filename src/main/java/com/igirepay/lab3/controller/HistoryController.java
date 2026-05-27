@@ -1,5 +1,9 @@
 package com.igirepay.lab3.controller;
 
+import java.math.RoundingMode;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 import com.igirepay.lab1.exceptions.DatabaseException;
 import com.igirepay.lab1.model.Account;
 import com.igirepay.lab1.model.Customer;
@@ -7,6 +11,7 @@ import com.igirepay.lab1.model.Transaction;
 import com.igirepay.lab2.dao.TransactionDAO;
 import com.igirepay.lab3.ui.SceneManager;
 import com.igirepay.lab3.ui.SessionManager;
+
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -14,10 +19,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-
-import java.math.RoundingMode;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class HistoryController {
 
@@ -44,11 +45,11 @@ public class HistoryController {
 
         for (Account account : accounts) {
             accountCombo.getItems().add(account.getAccountType().name()
-                    + " (" + account.getAccountId().toString().substring(0, 8) + "...)");
+                    + " (ID: " + account.getAccountId() + ")");
         }
 
-        colTxId.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTransactionId().toString().substring(0, 8) + "..."));
-        colRefId.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getReferenceId().substring(0, 8) + "..."));
+        colTxId.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getTransactionId())));
+        colRefId.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getReferenceId().substring(0, Math.min(8, d.getValue().getReferenceId().length())) + "..."));
         colType.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTransactionType().name()));
         colAmount.setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF"));

@@ -1,13 +1,5 @@
 package com.igirepay.lab2.service;
 
-import com.igirepay.lab1.model.Account;
-import com.igirepay.lab1.exceptions.AccountNotFoundException;
-import com.igirepay.lab1.exceptions.DatabaseException;
-import com.igirepay.lab1.model.Transaction;
-import com.igirepay.lab1.model.TransactionType;
-import com.igirepay.lab2.dao.AccountDAO;
-import com.igirepay.lab2.dao.TransactionDAO;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -18,7 +10,14 @@ import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.UUID;
+
+import com.igirepay.lab1.exceptions.AccountNotFoundException;
+import com.igirepay.lab1.exceptions.DatabaseException;
+import com.igirepay.lab1.model.Account;
+import com.igirepay.lab1.model.Transaction;
+import com.igirepay.lab1.model.TransactionType;
+import com.igirepay.lab2.dao.AccountDAO;
+import com.igirepay.lab2.dao.TransactionDAO;
 
 public class ReportService {
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.00");
@@ -33,7 +32,7 @@ public class ReportService {
         this.transactionDAO = new TransactionDAO();
     }
 
-    public void exportToCSV(UUID accountId, LocalDate from, LocalDate to, String filePath) {
+    public void exportToCSV(int accountId, LocalDate from, LocalDate to, String filePath) {
         List<Transaction> transactions = transactionDAO.findByDateRange(accountId, from, to);
         Path outputPath = Path.of(filePath);
         try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
@@ -48,44 +47,36 @@ public class ReportService {
         }
     }
 
-    public void printDailySummary(UUID accountId, LocalDate date) {
+    public void printDailySummary(int accountId, LocalDate date) {
         LocalDate targetDate = date == null ? LocalDate.now() : date;
         List<Transaction> transactions = transactionDAO.findByDateRange(accountId, targetDate, targetDate);
 
-        BigDecimal deposits = total(transactions, TransactionType.DEPOSIT);
+        BigDecimal deposits    = total(transactions, TransactionType.DEPOSIT);
         BigDecimal withdrawals = total(transactions, TransactionType.WITHDRAWAL);
-        BigDecimal transferIn = total(transactions, TransactionType.TRANSFER_IN);
+        BigDecimal transferIn  = total(transactions, TransactionType.TRANSFER_IN);
         BigDecimal transferOut = total(transactions, TransactionType.TRANSFER_OUT);
-        BigDecimal fees = total(transactions, TransactionType.FEE);
-        BigDecimal netChange = deposits
-                .add(transferIn)
-                .subtract(withdrawals)
-                .subtract(transferOut)
-                .subtract(fees);
+        BigDecimal fees        = total(transactions, TransactionType.FEE);
+        BigDecimal netChange   = deposits.add(transferIn)
+                .subtract(withdrawals).subtract(transferOut).subtract(fees);
 
         System.out.println("Daily summary for " + targetDate + ":");
-        System.out.println("Total deposits: " + formatMoney(deposits));
-        System.out.println("Total withdrawals: " + formatMoney(withdrawals));
-        System.out.println("Total transfers in: " + formatMoney(transferIn));
-        System.out.println("Total transfers out: " + formatMoney(transferOut));
-        System.out.println("Total fees: " + formatMoney(fees));
-        System.out.println("Net change: " + formatMoney(netChange));
+        System.out.println("Total deposits:       " + formatMoney(deposits));
+        System.out.println("Total withdrawals:    " + formatMoney(withdrawals));
+        System.out.println("Total transfers in:   " + formatMoney(transferIn));
+        System.out.println("Total transfers out:  " + formatMoney(transferOut));
+        System.out.println("Total fees:           " + formatMoney(fees));
+        System.out.println("Net change:           " + formatMoney(netChange));
     }
 
-    public void printFullStatement(UUID customerId) {
+    public void printFullStatement(int customerId) {
         List<Account> accounts = accountDAO.findByCustomerId(customerId);
-        if (accounts.isEmpty()) {
-            throw new AccountNotFoundException(String.valueOf(customerId));
-        }
+        if (accounts.isEmpty()) throw new AccountNotFoundException(String.valueOf(customerId));
 
         for (Account account : accounts) {
             System.out.println();
             System.out.println(account.getAccountType() + " account " + account.getAccountId());
             List<Transaction> transactions = transactionDAO.findByAccountId(account.getAccountId());
-            if (transactions.isEmpty()) {
-                System.out.println("No transactions found.");
-                continue;
-            }
+            if (transactions.isEmpty()) { System.out.println("No transactions found."); continue; }
             for (Transaction transaction : transactions) {
                 System.out.println(formatStatementLine(transaction));
             }
@@ -103,33 +94,31 @@ public class ReportService {
     }
 
     private String escape(String value) {
-        String safeValue = value == null ? "" : value;
-        if (safeValue.contains(",") || safeValue.contains("\"") || safeValue.contains("\n")) {
-            return "\"" + safeValue.replace("\"", "\"\"") + "\"";
+        String safe = value == null ? "" : value;
+        if (safe.contains(",") || safe.contains("\"") || safe.contains("\n")) {
+            return "\"" + safe.replace("\"", "\"\"") + "\"";
         }
-        return safeValue;
+        return safe;
     }
 
-    private BigDecimal total(List<Transaction> transactions, TransactionType transactionType) {
+    private BigDecimal total(List<Transaction> transactions, TransactionType type) {
         return transactions.stream()
-                .filter(transaction -> transaction.getTransactionType() == transactionType)
+                .filter(t -> t.getTransactionType() == type)
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private String formatStatementLine(Transaction transaction) {
         String fee = transaction.getFee().compareTo(BigDecimal.ZERO) > 0
-                ? ", fee " + formatMoney(transaction.getFee())
-                : "";
+                ? ", fee " + formatMoney(transaction.getFee()) : "";
         return transaction.getTimestamp().format(STATEMENT_TIME_FORMAT) + " | " +
                 transaction.getTransactionType() + " | " +
                 formatMoney(transaction.getAmount()) + fee + " | " +
-                transaction.getStatus() + " | Ref: " +
-                transaction.getReferenceId();
+                transaction.getStatus() + " | Ref: " + transaction.getReferenceId();
     }
 
     private String formatMoney(BigDecimal amount) {
-        BigDecimal safeAmount = amount == null ? BigDecimal.ZERO : amount;
-        return MONEY_FORMAT.format(safeAmount.setScale(2, RoundingMode.HALF_UP)) + " RWF";
+        BigDecimal safe = amount == null ? BigDecimal.ZERO : amount;
+        return MONEY_FORMAT.format(safe.setScale(2, RoundingMode.HALF_UP)) + " RWF";
     }
 }

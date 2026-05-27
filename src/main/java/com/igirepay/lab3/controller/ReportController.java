@@ -1,5 +1,11 @@
 package com.igirepay.lab3.controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 import com.igirepay.lab1.exceptions.DatabaseException;
 import com.igirepay.lab1.model.Account;
 import com.igirepay.lab1.model.Customer;
@@ -9,6 +15,7 @@ import com.igirepay.lab2.dao.TransactionDAO;
 import com.igirepay.lab3.ui.SceneManager;
 import com.igirepay.lab3.ui.SessionManager;
 import com.igirepay.lab3.util.CsvExporter;
+
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -17,12 +24,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class ReportController {
 
@@ -52,17 +53,24 @@ public class ReportController {
 
         for (Account account : accounts) {
             accountCombo.getItems().add(account.getAccountType().name()
-                    + " (" + account.getAccountId().toString().substring(0, 8) + "...)");
+                    + " (ID: " + account.getAccountId() + ")");
         }
 
-        colTxId.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTransactionId().toString().substring(0, 8) + "..."));
-        colRefId.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getReferenceId().substring(0, 8) + "..."));
-        colType.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTransactionType().name()));
-        colAmount.setCellValueFactory(d -> new SimpleStringProperty(
-                d.getValue().getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF"));
-        colDate.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTimestamp().format(FORMATTER)));
-        colRunningBalance.setCellValueFactory(d -> new SimpleStringProperty(
-                d.getValue().getDescription()));
+        colTxId.setCellValueFactory(d ->
+                new SimpleStringProperty(String.valueOf(d.getValue().getTransactionId())));
+        colRefId.setCellValueFactory(d -> {
+            String ref = d.getValue().getReferenceId();
+            return new SimpleStringProperty(ref.substring(0, Math.min(8, ref.length())) + "...");
+        });
+        colType.setCellValueFactory(d ->
+                new SimpleStringProperty(d.getValue().getTransactionType().name()));
+        colAmount.setCellValueFactory(d ->
+                new SimpleStringProperty(d.getValue().getAmount()
+                        .setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF"));
+        colDate.setCellValueFactory(d ->
+                new SimpleStringProperty(d.getValue().getTimestamp().format(FORMATTER)));
+        colRunningBalance.setCellValueFactory(d ->
+                new SimpleStringProperty(d.getValue().getDescription()));
     }
 
     @FXML
@@ -75,20 +83,20 @@ public class ReportController {
             List<Transaction> transactions = transactionDAO.findByDateRange(
                     accounts.get(index).getAccountId(), LocalDate.now(), LocalDate.now());
 
-            BigDecimal deposited = sumByType(transactions, TransactionType.DEPOSIT);
-            BigDecimal withdrawn = sumByType(transactions, TransactionType.WITHDRAWAL);
-            BigDecimal transferIn = sumByType(transactions, TransactionType.TRANSFER_IN);
+            BigDecimal deposited   = sumByType(transactions, TransactionType.DEPOSIT);
+            BigDecimal withdrawn   = sumByType(transactions, TransactionType.WITHDRAWAL);
+            BigDecimal transferIn  = sumByType(transactions, TransactionType.TRANSFER_IN);
             BigDecimal transferOut = sumByType(transactions, TransactionType.TRANSFER_OUT);
-            BigDecimal fees = sumByType(transactions, TransactionType.FEE);
+            BigDecimal fees        = sumByType(transactions, TransactionType.FEE);
 
             summaryLabel.setText(
                     "Today's Summary (" + LocalDate.now() + ")\n" +
-                    "Transactions: " + transactions.size() + "\n" +
-                    "Deposited: " + fmt(deposited) + " RWF\n" +
-                    "Withdrawn: " + fmt(withdrawn) + " RWF\n" +
-                    "Transfer In: " + fmt(transferIn) + " RWF\n" +
-                    "Transfer Out: " + fmt(transferOut) + " RWF\n" +
-                    "Fees: " + fmt(fees) + " RWF"
+                    "Transactions:  " + transactions.size() + "\n" +
+                    "Deposited:     " + fmt(deposited)   + " RWF\n" +
+                    "Withdrawn:     " + fmt(withdrawn)   + " RWF\n" +
+                    "Transfer In:   " + fmt(transferIn)  + " RWF\n" +
+                    "Transfer Out:  " + fmt(transferOut) + " RWF\n" +
+                    "Fees:          " + fmt(fees)        + " RWF"
             );
         } catch (DatabaseException e) {
             showError("A database error occurred. Please try again.");
@@ -119,12 +127,13 @@ public class ReportController {
         if (index < 0) return;
 
         try {
-            List<Transaction> transactions = transactionDAO.findByAccountId(accounts.get(index).getAccountId());
-            // Calculate running balance column using description field as display placeholder
+            List<Transaction> transactions = transactionDAO.findByAccountId(
+                    accounts.get(index).getAccountId());
+            // Compute running balance and store in description for display
             BigDecimal running = BigDecimal.ZERO;
             for (Transaction tx : transactions) {
                 switch (tx.getTransactionType()) {
-                    case DEPOSIT, TRANSFER_IN -> running = running.add(tx.getAmount());
+                    case DEPOSIT, TRANSFER_IN          -> running = running.add(tx.getAmount());
                     case WITHDRAWAL, TRANSFER_OUT, FEE -> running = running.subtract(tx.getAmount());
                 }
                 tx.setDescription(running.setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF");
