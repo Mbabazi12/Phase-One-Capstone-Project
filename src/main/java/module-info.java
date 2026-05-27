@@ -9,10 +9,8 @@ module com.igirepay {
     exports com.igirepay.lab1.service;
     exports com.igirepay.lab2.config;
     exports com.igirepay.lab2.dao;
-    exports com.igirepay.lab2.service;
     exports com.igirepay.lab3.ui;
     exports com.igirepay.lab3.controller;
-    exports com.igirepay.lab3.util;
     exports com.igirepay;
 
     opens com.igirepay.lab3.controller to javafx.fxml;
