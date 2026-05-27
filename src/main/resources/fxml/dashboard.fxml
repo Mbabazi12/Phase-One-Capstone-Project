@@ -5,42 +5,93 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.igirepay.lab3.controller.DashboardController">
 
+    <!-- ── Top header ── -->
     <top>
-        <VBox style="-fx-padding: 20 20 10 20; -fx-spacing: 6;">
-            <Label fx:id="welcomeLabel" style="-fx-font-size: 20; -fx-font-weight: bold;"/>
-            <Label text="Your Accounts" style="-fx-font-size: 13;"/>
+        <VBox style="-fx-padding: 16 20 10 20; -fx-spacing: 4;
+                     -fx-background-color: #2c3e50;">
+            <Label fx:id="welcomeLabel"
+                   style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <Label text="Your Accounts"
+                   style="-fx-font-size: 12; -fx-text-fill: #bdc3c7;"/>
         </VBox>
     </top>
 
+    <!-- ── Left sidebar ── -->
+    <left>
+        <VBox spacing="6"
+              style="-fx-padding: 20 12 20 12; -fx-background-color: #34495e;
+                     -fx-min-width: 160; -fx-pref-width: 160;">
+
+            <Label text="TRANSACTIONS"
+                   style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
+                          -fx-padding: 8 0 4 4; -fx-font-weight: bold;"/>
+            <Button text="Deposit"
+                    onAction="#handleDeposit"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Withdraw"
+                    onAction="#handleWithdraw"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Transfer"
+                    onAction="#handleTransfer"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Savings"
+                    onAction="#handleSavings"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+
+            <Label text="ACCOUNT"
+                   style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
+                          -fx-padding: 12 0 4 4; -fx-font-weight: bold;"/>
+            <Button text="Transaction History"
+                    onAction="#handleHistory"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Reports"
+                    onAction="#handleReports"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Manage Accounts"
+                    onAction="#handleManageAccounts"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Change PIN"
+                    onAction="#handleChangePin"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+
+            <!-- Spacer pushes Logout to the bottom -->
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <Button text="Logout"
+                    onAction="#handleLogout"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #c0392b; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+        </VBox>
+    </left>
+
+    <!-- ── Center: accounts table ── -->
     <center>
-        <ScrollPane fitToWidth="true" fitToHeight="true" style="-fx-padding: 0 20 0 20;">
+        <ScrollPane fitToWidth="true" fitToHeight="true" style="-fx-padding: 0;">
             <TableView fx:id="accountsTable" VBox.vgrow="ALWAYS">
                 <columns>
-                    <TableColumn fx:id="colAccountId"   text="Account ID"   prefWidth="340"/>
-                    <TableColumn fx:id="colAccountType" text="Type"         prefWidth="100"/>
-                    <TableColumn fx:id="colBalance"     text="Balance"      prefWidth="160"/>
+                    <TableColumn fx:id="colAccountId"   text="Account ID"  prefWidth="120"/>
+                    <TableColumn fx:id="colAccountType" text="Type"        prefWidth="120"/>
+                    <TableColumn fx:id="colBalance"     text="Balance"     prefWidth="200"/>
                 </columns>
             </TableView>
         </ScrollPane>
     </center>
 
-    <bottom>
-        <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="NEVER">
-            <VBox spacing="10" style="-fx-padding: 16;">
-                <HBox spacing="10" style="-fx-alignment: center;">
-                    <Button text="Deposit"              onAction="#handleDeposit"         prefWidth="130"/>
-                    <Button text="Withdraw"             onAction="#handleWithdraw"        prefWidth="130"/>
-                    <Button text="Transfer"             onAction="#handleTransfer"        prefWidth="130"/>
-                    <Button text="Savings"              onAction="#handleSavings"         prefWidth="130"/>
-                </HBox>
-                <HBox spacing="10" style="-fx-alignment: center;">
-                    <Button text="Transaction History"  onAction="#handleHistory"         prefWidth="160"/>
-                    <Button text="Reports"              onAction="#handleReports"         prefWidth="100"/>
-                    <Button text="Manage Accounts"      onAction="#handleManageAccounts"  prefWidth="140"/>
-                    <Button text="Change PIN"           onAction="#handleChangePin"       prefWidth="110"/>
-                    <Button text="Logout"               onAction="#handleLogout"          prefWidth="90"/>
-                </HBox>
-            </VBox>
-        </ScrollPane>
-    </bottom>
 </BorderPane>
