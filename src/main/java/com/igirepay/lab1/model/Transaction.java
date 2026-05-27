@@ -2,13 +2,12 @@ package com.igirepay.lab1.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class Transaction {
-    private UUID transactionId;
+    private int transactionId;
     private String referenceId;
-    private UUID accountId;
-    private UUID targetAccountId;
+    private int accountId;
+    private int targetAccountId;
     private TransactionType transactionType;
     private BigDecimal amount;
     private BigDecimal fee;
@@ -17,23 +16,23 @@ public class Transaction {
     private String description;
 
     public Transaction() {
-        this(UUID.randomUUID(), "", null, null, TransactionType.DEPOSIT, BigDecimal.ZERO,
+        this(0, "", 0, 0, TransactionType.DEPOSIT, BigDecimal.ZERO,
                 BigDecimal.ZERO, TransactionStatus.SUCCESS, LocalDateTime.now(), "");
     }
 
-    public Transaction(String referenceId, UUID accountId, UUID targetAccountId,
+    public Transaction(String referenceId, int accountId, int targetAccountId,
                        TransactionType transactionType, BigDecimal amount, String description) {
-        this(UUID.randomUUID(), referenceId, accountId, targetAccountId, transactionType, amount,
+        this(0, referenceId, accountId, targetAccountId, transactionType, amount,
                 BigDecimal.ZERO, TransactionStatus.SUCCESS, LocalDateTime.now(), description);
     }
 
-    public Transaction(UUID transactionId, String referenceId, UUID accountId, UUID targetAccountId,
+    public Transaction(int transactionId, String referenceId, int accountId, int targetAccountId,
                        TransactionType transactionType, BigDecimal amount, BigDecimal fee,
                        TransactionStatus status, LocalDateTime timestamp, String description) {
-        setTransactionId(transactionId);
+        this.transactionId = transactionId;
         setReferenceId(referenceId);
-        setAccountId(accountId);
-        setTargetAccountId(targetAccountId);
+        this.accountId = accountId;
+        this.targetAccountId = targetAccountId;
         setTransactionType(transactionType);
         setAmount(amount);
         setFee(fee);
@@ -42,99 +41,54 @@ public class Transaction {
         setDescription(description);
     }
 
-    public UUID getTransactionId() {
-        return transactionId;
-    }
+    public int getTransactionId() { return transactionId; }
+    public void setTransactionId(int transactionId) { this.transactionId = transactionId; }
 
-    public void setTransactionId(UUID transactionId) {
-        this.transactionId = transactionId == null ? UUID.randomUUID() : transactionId;
-    }
-
-    public String getReferenceId() {
-        return referenceId;
-    }
-
+    public String getReferenceId() { return referenceId; }
     public void setReferenceId(String referenceId) {
         this.referenceId = referenceId == null ? "" : referenceId.trim();
     }
 
-    public UUID getAccountId() {
-        return accountId;
-    }
+    public int getAccountId() { return accountId; }
+    public void setAccountId(int accountId) { this.accountId = accountId; }
 
-    public void setAccountId(UUID accountId) {
-        this.accountId = accountId;
-    }
+    public int getTargetAccountId() { return targetAccountId; }
+    public void setTargetAccountId(int targetAccountId) { this.targetAccountId = targetAccountId; }
 
-    public UUID getTargetAccountId() {
-        return targetAccountId;
-    }
-
-    public void setTargetAccountId(UUID targetAccountId) {
-        this.targetAccountId = targetAccountId;
-    }
-
-    public TransactionType getTransactionType() {
-        return transactionType;
-    }
-
+    public TransactionType getTransactionType() { return transactionType; }
     public void setTransactionType(TransactionType transactionType) {
         this.transactionType = transactionType == null ? TransactionType.DEPOSIT : transactionType;
     }
 
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
+    public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) {
         this.amount = amount == null ? BigDecimal.ZERO : amount.stripTrailingZeros();
     }
 
-    public BigDecimal getFee() {
-        return fee;
-    }
-
+    public BigDecimal getFee() { return fee; }
     public void setFee(BigDecimal fee) {
         this.fee = fee == null ? BigDecimal.ZERO : fee.stripTrailingZeros();
     }
 
-    public TransactionStatus getStatus() {
-        return status;
-    }
-
+    public TransactionStatus getStatus() { return status; }
     public void setStatus(TransactionStatus status) {
         this.status = status == null ? TransactionStatus.SUCCESS : status;
     }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
+    public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp == null ? LocalDateTime.now() : timestamp;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
+    public String getDescription() { return description; }
     public void setDescription(String description) {
         this.description = description == null ? "" : description.trim();
     }
 
     @Override
     public String toString() {
-        return "Transaction{" +
-                "transactionId=" + transactionId +
-                ", referenceId='" + referenceId + '\'' +
-                ", accountId=" + accountId +
-                ", targetAccountId=" + targetAccountId +
-                ", transactionType=" + transactionType +
-                ", amount=" + amount +
-                ", fee=" + fee +
-                ", status=" + status +
-                ", timestamp=" + timestamp +
-                ", description='" + description + '\'' +
-                '}';
+        return "Transaction{transactionId=" + transactionId + ", referenceId='" + referenceId
+                + "', accountId=" + accountId + ", targetAccountId=" + targetAccountId
+                + ", type=" + transactionType + ", amount=" + amount + ", status=" + status + '}';
     }
 }

@@ -1,21 +1,25 @@
 package com.igirepay.lab1.model;
 
-import com.igirepay.lab1.exceptions.InvalidAmountException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
+
+import com.igirepay.lab1.exceptions.InvalidAmountException;
 
 public class WalletAccount extends Account {
     public static final BigDecimal TRANSFER_FEE_RATE = new BigDecimal("0.01");
-    public static final BigDecimal MIN_TRANSFER_FEE = new BigDecimal("10");
-    public static final BigDecimal MAX_TRANSFER_FEE = new BigDecimal("500");
+    public static final BigDecimal MIN_TRANSFER_FEE  = new BigDecimal("10");
+    public static final BigDecimal MAX_TRANSFER_FEE  = new BigDecimal("500");
 
-    public WalletAccount(UUID customerId, String hashedPin) {
+    public WalletAccount(int customerId, String hashedPin) {
         super(AccountType.WALLET, customerId, hashedPin);
     }
 
-    public WalletAccount(UUID accountId, UUID customerId, BigDecimal balance, String hashedPin) {
-        super(accountId, customerId, AccountType.WALLET, balance, LocalDateTime.now(), true, hashedPin);
+    public WalletAccount(int accountId, int customerId, BigDecimal balance, String hashedPin) {
+        super(accountId, customerId, AccountType.WALLET, AccountType.WALLET.name(), balance, LocalDateTime.now(), true, hashedPin);
+    }
+
+    public WalletAccount(int accountId, int customerId, String accountName, BigDecimal balance, String hashedPin) {
+        super(accountId, customerId, AccountType.WALLET, accountName, balance, LocalDateTime.now(), true, hashedPin);
     }
 
     @Override
@@ -34,16 +38,14 @@ public class WalletAccount extends Account {
 
     @Override
     public Transaction processTransaction(Transaction transaction) {
-        if (transaction == null) {
-            throw new InvalidAmountException("Transaction is required.");
-        }
+        if (transaction == null) throw new InvalidAmountException("Transaction is required.");
         requireActive();
         BigDecimal amount = requireValidAmount(transaction.getAmount());
         transaction.setAccountId(getAccountId());
         transaction.setAmount(amount);
 
         switch (transaction.getTransactionType()) {
-            case DEPOSIT, TRANSFER_IN -> credit(amount);
+            case DEPOSIT, TRANSFER_IN  -> credit(amount);
             case WITHDRAWAL, TRANSFER_OUT, FEE -> debit(amount);
         }
 
@@ -52,27 +54,16 @@ public class WalletAccount extends Account {
     }
 
     public static BigDecimal calculateTransferFee(BigDecimal amount) {
-        BigDecimal normalizedAmount = amount == null ? BigDecimal.ZERO : amount.stripTrailingZeros();
-        BigDecimal fee = normalizedAmount.multiply(TRANSFER_FEE_RATE).stripTrailingZeros();
-        if (fee.compareTo(MIN_TRANSFER_FEE) < 0) {
-            return MIN_TRANSFER_FEE;
-        }
-        if (fee.compareTo(MAX_TRANSFER_FEE) > 0) {
-            return MAX_TRANSFER_FEE;
-        }
+        BigDecimal normalized = amount == null ? BigDecimal.ZERO : amount.stripTrailingZeros();
+        BigDecimal fee = normalized.multiply(TRANSFER_FEE_RATE).stripTrailingZeros();
+        if (fee.compareTo(MIN_TRANSFER_FEE) < 0) return MIN_TRANSFER_FEE;
+        if (fee.compareTo(MAX_TRANSFER_FEE) > 0) return MAX_TRANSFER_FEE;
         return fee;
     }
 
     @Override
     public String toString() {
-        return "WalletAccount{" +
-                "accountId=" + getAccountId() +
-                ", customerId=" + getCustomerId() +
-                ", accountType=" + getAccountType() +
-                ", balance=" + getBalance() +
-                ", createdAt=" + getCreatedAt() +
-                ", isActive=" + isActive() +
-                ", transactionCount=" + getTransactionHistory().size() +
-                '}';
+        return "WalletAccount{accountId=" + getAccountId() + ", customerId=" + getCustomerId()
+                + ", balance=" + getBalance() + ", isActive=" + isActive() + '}';
     }
 }

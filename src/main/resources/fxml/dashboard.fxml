@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.DashboardController">
+
+    <top>
+        <VBox style="-fx-padding: 16 20 10 20; -fx-spacing: 4;
+                     -fx-background-color: #2c3e50;">
+            <Label fx:id="welcomeLabel"
+                   style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <Label text="Your Accounts"
+                   style="-fx-font-size: 12; -fx-text-fill: #bdc3c7;"/>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox spacing="6"
+              style="-fx-padding: 20 12 20 12; -fx-background-color: #34495e;
+                     -fx-min-width: 160; -fx-pref-width: 160;">
+
+            <Label text="TRANSACTIONS"
+                   style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
+                          -fx-padding: 8 0 4 4; -fx-font-weight: bold;"/>
+            <Button text="Deposit"
+                    onAction="#handleDeposit"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Withdraw"
+                    onAction="#handleWithdraw"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Transfer"
+                    onAction="#handleTransfer"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Savings"
+                    onAction="#handleSavings"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+
+            <Label text="ACCOUNT"
+                   style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
+                          -fx-padding: 12 0 4 4; -fx-font-weight: bold;"/>
+            <Button text="Transaction History"
+                    onAction="#handleHistory"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Reports"
+                    onAction="#handleReports"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Manage Accounts"
+                    onAction="#handleManageAccounts"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+            <Button text="Change PIN"
+                    onAction="#handleChangePin"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <Button text="Logout"
+                    onAction="#handleLogout"
+                    maxWidth="Infinity"
+                    style="-fx-background-color: #c0392b; -fx-text-fill: white;
+                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
+        </VBox>
+    </left>
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="true" style="-fx-padding: 0;">
+            <TableView fx:id="accountsTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colAccountId"   text="Account ID"  prefWidth="120"/>
+                    <TableColumn fx:id="colAccountType" text="Type"        prefWidth="120"/>
+                    <TableColumn fx:id="colBalance"     text="Balance"     prefWidth="200"/>
+                </columns>
+            </TableView>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

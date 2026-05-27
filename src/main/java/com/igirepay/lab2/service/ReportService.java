@@ -1,13 +1,5 @@
 package com.igirepay.lab2.service;
 
-import com.igirepay.lab1.model.Account;
-import com.igirepay.lab1.exceptions.AccountNotFoundException;
-import com.igirepay.lab1.exceptions.DatabaseException;
-import com.igirepay.lab1.model.Transaction;
-import com.igirepay.lab1.model.TransactionType;
-import com.igirepay.lab2.dao.AccountDAO;
-import com.igirepay.lab2.dao.TransactionDAO;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -18,12 +10,18 @@ import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.UUID;
+
+import com.igirepay.lab1.exceptions.AccountNotFoundException;
+import com.igirepay.lab1.exceptions.DatabaseException;
+import com.igirepay.lab1.model.Account;
+import com.igirepay.lab1.model.Transaction;
+import com.igirepay.lab1.model.TransactionType;
+import com.igirepay.lab2.dao.AccountDAO;
+import com.igirepay.lab2.dao.TransactionDAO;
 
 public class ReportService {
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.00");
-    private static final DateTimeFormatter STATEMENT_TIME_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final AccountDAO accountDAO;
     private final TransactionDAO transactionDAO;
@@ -33,103 +31,81 @@ public class ReportService {
         this.transactionDAO = new TransactionDAO();
     }
 
-    public void exportToCSV(UUID accountId, LocalDate from, LocalDate to, String filePath) {
+    public String exportToCSV(int accountId, LocalDate from, LocalDate to) {
         List<Transaction> transactions = transactionDAO.findByDateRange(accountId, from, to);
-        Path outputPath = Path.of(filePath);
-        try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
-            writer.write("date,type,amount,fee,referenceId,description,status");
-            writer.newLine();
-            for (Transaction transaction : transactions) {
-                writer.write(toCsvLine(transaction));
+        Path dir = Path.of("reports");
+        try {
+            if (!Files.exists(dir)) Files.createDirectories(dir);
+            String fileName = "statement_acc" + accountId + "_" + System.currentTimeMillis() + ".csv";
+            Path outputPath = dir.resolve(fileName);
+            try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
+                writer.write("date,type,amount,fee,reference_id,description,status");
                 writer.newLine();
+                for (Transaction tx : transactions) {
+                    writer.write(toCsvLine(tx));
+                    writer.newLine();
+                }
             }
-        } catch (IOException exception) {
-            throw new DatabaseException("Could not export transactions to CSV", exception);
+            return outputPath.toAbsolutePath().toString();
+        } catch (IOException e) {
+            throw new DatabaseException("Could not export transactions to CSV", e);
         }
     }
 
-    public void printDailySummary(UUID accountId, LocalDate date) {
-        LocalDate targetDate = date == null ? LocalDate.now() : date;
-        List<Transaction> transactions = transactionDAO.findByDateRange(accountId, targetDate, targetDate);
+    public void printDailySummary(int accountId, LocalDate date) {
+        LocalDate target = date == null ? LocalDate.now() : date;
+        List<Transaction> transactions = transactionDAO.findByDateRange(accountId, target, target);
 
-        BigDecimal deposits = total(transactions, TransactionType.DEPOSIT);
+        BigDecimal deposits    = total(transactions, TransactionType.DEPOSIT);
         BigDecimal withdrawals = total(transactions, TransactionType.WITHDRAWAL);
-        BigDecimal transferIn = total(transactions, TransactionType.TRANSFER_IN);
+        BigDecimal transferIn  = total(transactions, TransactionType.TRANSFER_IN);
         BigDecimal transferOut = total(transactions, TransactionType.TRANSFER_OUT);
-        BigDecimal fees = total(transactions, TransactionType.FEE);
-        BigDecimal netChange = deposits
-                .add(transferIn)
-                .subtract(withdrawals)
-                .subtract(transferOut)
-                .subtract(fees);
+        BigDecimal fees        = total(transactions, TransactionType.FEE);
+        BigDecimal net         = deposits.add(transferIn).subtract(withdrawals).subtract(transferOut).subtract(fees);
 
-        System.out.println("Daily summary for " + targetDate + ":");
-        System.out.println("Total deposits: " + formatMoney(deposits));
-        System.out.println("Total withdrawals: " + formatMoney(withdrawals));
-        System.out.println("Total transfers in: " + formatMoney(transferIn));
-        System.out.println("Total transfers out: " + formatMoney(transferOut));
-        System.out.println("Total fees: " + formatMoney(fees));
-        System.out.println("Net change: " + formatMoney(netChange));
+        System.out.println("Daily summary for " + target + ":");
+        System.out.println("  Deposits:      " + fmt(deposits));
+        System.out.println("  Withdrawals:   " + fmt(withdrawals));
+        System.out.println("  Transfer in:   " + fmt(transferIn));
+        System.out.println("  Transfer out:  " + fmt(transferOut));
+        System.out.println("  Fees:          " + fmt(fees));
+        System.out.println("  Net change:    " + fmt(net));
     }
 
-    public void printFullStatement(UUID customerId) {
+    public List<Transaction> getFullStatement(int customerId) {
         List<Account> accounts = accountDAO.findByCustomerId(customerId);
-        if (accounts.isEmpty()) {
-            throw new AccountNotFoundException(String.valueOf(customerId));
-        }
-
-        for (Account account : accounts) {
-            System.out.println();
-            System.out.println(account.getAccountType() + " account " + account.getAccountId());
-            List<Transaction> transactions = transactionDAO.findByAccountId(account.getAccountId());
-            if (transactions.isEmpty()) {
-                System.out.println("No transactions found.");
-                continue;
-            }
-            for (Transaction transaction : transactions) {
-                System.out.println(formatStatementLine(transaction));
-            }
-        }
+        if (accounts.isEmpty()) throw new AccountNotFoundException(String.valueOf(customerId));
+        return accounts.stream()
+                .flatMap(a -> transactionDAO.findByAccountId(a.getAccountId()).stream())
+                .toList();
     }
 
-    private String toCsvLine(Transaction transaction) {
-        return escape(transaction.getTimestamp().format(STATEMENT_TIME_FORMAT)) + "," +
-                escape(transaction.getTransactionType().name()) + "," +
-                escape(transaction.getAmount().toPlainString()) + "," +
-                escape(transaction.getFee().toPlainString()) + "," +
-                escape(transaction.getReferenceId()) + "," +
-                escape(transaction.getDescription()) + "," +
-                escape(transaction.getStatus().name());
+    private String toCsvLine(Transaction tx) {
+        return escape(tx.getTimestamp().format(TIME_FORMAT)) + "," +
+               escape(tx.getTransactionType().name()) + "," +
+               escape(tx.getAmount().toPlainString()) + "," +
+               escape(tx.getFee().toPlainString()) + "," +
+               escape(tx.getReferenceId()) + "," +
+               escape(tx.getDescription()) + "," +
+               escape(tx.getStatus().name());
     }
 
     private String escape(String value) {
-        String safeValue = value == null ? "" : value;
-        if (safeValue.contains(",") || safeValue.contains("\"") || safeValue.contains("\n")) {
-            return "\"" + safeValue.replace("\"", "\"\"") + "\"";
-        }
-        return safeValue;
+        String s = value == null ? "" : value;
+        if (s.contains(",") || s.contains("\"") || s.contains("\n"))
+            return "\"" + s.replace("\"", "\"\"") + "\"";
+        return s;
     }
 
-    private BigDecimal total(List<Transaction> transactions, TransactionType transactionType) {
-        return transactions.stream()
-                .filter(transaction -> transaction.getTransactionType() == transactionType)
+    private BigDecimal total(List<Transaction> txs, TransactionType type) {
+        return txs.stream()
+                .filter(t -> t.getTransactionType() == type)
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private String formatStatementLine(Transaction transaction) {
-        String fee = transaction.getFee().compareTo(BigDecimal.ZERO) > 0
-                ? ", fee " + formatMoney(transaction.getFee())
-                : "";
-        return transaction.getTimestamp().format(STATEMENT_TIME_FORMAT) + " | " +
-                transaction.getTransactionType() + " | " +
-                formatMoney(transaction.getAmount()) + fee + " | " +
-                transaction.getStatus() + " | Ref: " +
-                transaction.getReferenceId();
-    }
-
-    private String formatMoney(BigDecimal amount) {
-        BigDecimal safeAmount = amount == null ? BigDecimal.ZERO : amount;
-        return MONEY_FORMAT.format(safeAmount.setScale(2, RoundingMode.HALF_UP)) + " RWF";
+    private String fmt(BigDecimal amount) {
+        return MONEY_FORMAT.format((amount == null ? BigDecimal.ZERO : amount)
+                .setScale(2, RoundingMode.HALF_UP)) + " RWF";
     }
 }

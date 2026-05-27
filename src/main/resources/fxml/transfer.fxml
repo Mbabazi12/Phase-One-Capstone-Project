@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.TransferController">
+
+    <top>
+        <VBox style="-fx-padding: 16 20 6 20;">
+            <Label text="Transfer Money" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+            <Label text="Send money to another customer's wallet (1% fee, min 10 RWF, max 500 RWF)" style="-fx-font-size: 12; -fx-text-fill: #666;"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
+            <VBox spacing="14" style="-fx-padding: 40;" minWidth="420">
+                <GridPane hgap="12" vgap="12">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="150"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="From Wallet:"       GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="accountCombo" promptText="Select wallet account"
+                              maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="Recipient Phone:"   GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <HBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                        <TextField fx:id="recipientPhoneField" promptText="10-digit phone number" HBox.hgrow="ALWAYS"/>
+                        <Button text="Look up" onAction="#handleLookupRecipient" prefWidth="80"/>
+                    </HBox>
+
+                    <Label text=""                   GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <Label fx:id="recipientNameLabel" text="" wrapText="true"
+                           GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Amount (RWF):"      GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <TextField fx:id="amountField" promptText="e.g. 10000"
+                               onKeyReleased="#handleAmountChanged"
+                               GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label text=""                   GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                    <Label fx:id="feeLabel" text="" style="-fx-font-style: italic; -fx-text-fill: #444;"
+                           GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                    <Label text="PIN:"               GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                    <PasswordField fx:id="pinField" promptText="5-digit PIN"
+                                   GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                </GridPane>
+                <Button text="Transfer" onAction="#handleTransfer" prefWidth="160"
+                        style="-fx-font-size: 13;"/>
+                <Label fx:id="resultLabel" text="" wrapText="true"/>
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox style="-fx-padding: 12;">
+            <Button text="← Back to Dashboard" onAction="#handleBack" prefWidth="180"/>
+        </HBox>
+    </bottom>
+</BorderPane>

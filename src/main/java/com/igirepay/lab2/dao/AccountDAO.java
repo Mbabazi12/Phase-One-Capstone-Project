@@ -1,39 +1,45 @@
 package com.igirepay.lab2.dao;
 
-import com.igirepay.lab1.model.Account;
-import com.igirepay.lab1.model.AccountType;
-import com.igirepay.lab1.exceptions.DatabaseException;
-import com.igirepay.lab1.model.SavingsAccount;
-import com.igirepay.lab1.model.WalletAccount;
-import com.igirepay.lab2.config.DBConnection;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
+import com.igirepay.lab1.exceptions.DatabaseException;
+import com.igirepay.lab1.model.Account;
+import com.igirepay.lab1.model.AccountType;
+import com.igirepay.lab1.model.SavingsAccount;
+import com.igirepay.lab1.model.WalletAccount;
+import com.igirepay.lab2.config.DBConnection;
 
 public class AccountDAO {
     private static final String ACCOUNT_COLUMNS =
-            "account_id, customer_id, account_type, balance, created_at, is_active, pin";
+            "account_id, customer_id, account_type, account_name, balance, created_at, is_active, pin";
 
-    public Account create(Account account, UUID customerId) {
-        String sql = "INSERT INTO accounts (" + ACCOUNT_COLUMNS + ") VALUES (?::uuid, ?::uuid, ?, ?, ?, ?, ?)";
+    public Account create(Account account, int customerId) {
+        String sql = "INSERT INTO accounts (customer_id, account_type, account_name, balance, created_at, is_active, pin)" +
+                     " VALUES (?, ?, ?, ?, ?, ?, ?)";
         Connection connection = DBConnection.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, account.getAccountId().toString());
-            statement.setString(2, customerId.toString());
-            statement.setString(3, account.getAccountType().name());
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, customerId);
+            statement.setString(2, account.getAccountType().name());
+            statement.setString(3, account.getAccountName());
             statement.setBigDecimal(4, account.getBalance());
             statement.setTimestamp(5, Timestamp.valueOf(account.getCreatedAt()));
             statement.setBoolean(6, account.isActive());
             statement.setString(7, account.getHashedPin());
             statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) {
+                    account.setAccountId(keys.getInt(1));
+                }
+            }
             return account;
         } catch (SQLException exception) {
             throw new DatabaseException("Could not create account", exception);
@@ -42,15 +48,13 @@ public class AccountDAO {
         }
     }
 
-    public Optional<Account> findById(UUID id) {
-        String sql = "SELECT " + ACCOUNT_COLUMNS + " FROM accounts WHERE account_id = ?::uuid";
+    public Optional<Account> findById(int id) {
+        String sql = "SELECT " + ACCOUNT_COLUMNS + " FROM accounts WHERE account_id = ?";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, id.toString());
+            statement.setInt(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return Optional.of(mapAccount(resultSet));
-                }
+                if (resultSet.next()) return Optional.of(mapAccount(resultSet));
                 return Optional.empty();
             }
         } catch (SQLException exception) {
@@ -60,16 +64,14 @@ public class AccountDAO {
         }
     }
 
-    public List<Account> findByCustomerId(UUID customerId) {
-        String sql = "SELECT " + ACCOUNT_COLUMNS + " FROM accounts WHERE customer_id = ?::uuid ORDER BY created_at";
+    public List<Account> findByCustomerId(int customerId) {
+        String sql = "SELECT " + ACCOUNT_COLUMNS + " FROM accounts WHERE customer_id = ? ORDER BY created_at";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, customerId.toString());
+            statement.setInt(1, customerId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<Account> accounts = new ArrayList<>();
-                while (resultSet.next()) {
-                    accounts.add(mapAccount(resultSet));
-                }
+                while (resultSet.next()) accounts.add(mapAccount(resultSet));
                 return accounts;
             }
         } catch (SQLException exception) {
@@ -79,12 +81,12 @@ public class AccountDAO {
         }
     }
 
-    public void updateBalance(UUID accountId, BigDecimal newBalance) {
-        String sql = "UPDATE accounts SET balance = ? WHERE account_id = ?::uuid";
+    public void updateBalance(int accountId, BigDecimal newBalance) {
+        String sql = "UPDATE accounts SET balance = ? WHERE account_id = ?";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setBigDecimal(1, newBalance);
-            statement.setString(2, accountId.toString());
+            statement.setInt(2, accountId);
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Could not update account balance", exception);
@@ -93,26 +95,25 @@ public class AccountDAO {
         }
     }
 
-    public void updateHashedPin(UUID accountId, String hashedPin) {
-        String sql = "UPDATE accounts SET pin = ? WHERE account_id = ?::uuid";
+    public void updateHashedPin(int accountId, String hashedPin) {
+        String sql = "UPDATE accounts SET pin = ? WHERE account_id = ?";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, hashedPin);
-            statement.setString(2, accountId.toString());
+            statement.setInt(2, accountId);
             statement.executeUpdate();
         } catch (SQLException exception) {
-            throw new DatabaseException("Could not update account PIN hash", exception);
+            throw new DatabaseException("Could not update account PIN", exception);
         } finally {
             closeIfStandalone(connection);
         }
     }
 
-    public void deactivate(UUID accountId) {
-        String sql = "UPDATE accounts SET is_active = ? WHERE account_id = ?::uuid";
+    public void deactivate(int accountId) {
+        String sql = "UPDATE accounts SET is_active = FALSE WHERE account_id = ?";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setBoolean(1, false);
-            statement.setString(2, accountId.toString());
+            statement.setInt(1, accountId);
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Could not deactivate account", exception);
@@ -121,29 +122,38 @@ public class AccountDAO {
         }
     }
 
+    public void activate(int accountId) {
+        String sql = "UPDATE accounts SET is_active = TRUE WHERE account_id = ?";
+        Connection connection = DBConnection.getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, accountId);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not activate account", exception);
+        } finally {
+            closeIfStandalone(connection);
+        }
+    }
+
     private Account mapAccount(ResultSet resultSet) throws SQLException {
         AccountType accountType = AccountType.valueOf(resultSet.getString("account_type"));
-        UUID accountId = UUID.fromString(resultSet.getString("account_id"));
-        UUID customerId = UUID.fromString(resultSet.getString("customer_id"));
+        int accountId   = resultSet.getInt("account_id");
+        int customerId  = resultSet.getInt("customer_id");
+        String accountName = resultSet.getString("account_name");
         BigDecimal balance = resultSet.getBigDecimal("balance");
-        String hashedPin = resultSet.getString("pin");
+        String hashedPin   = resultSet.getString("pin");
 
         Account account = accountType == AccountType.WALLET
-                ? new WalletAccount(accountId, customerId, balance, hashedPin)
-                : new SavingsAccount(accountId, customerId, balance, hashedPin);
+                ? new WalletAccount(accountId, customerId, accountName, balance, hashedPin)
+                : new SavingsAccount(accountId, customerId, accountName, balance, hashedPin);
         account.setCreatedAt(resultSet.getTimestamp("created_at").toLocalDateTime());
         account.setActive(resultSet.getBoolean("is_active"));
         return account;
     }
 
     private void closeIfStandalone(Connection connection) {
-        if (DBConnection.isTransactionConnectionActive()) {
-            return;
-        }
-        try {
-            connection.close();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not close database connection", exception);
-        }
+        if (DBConnection.isTransactionConnectionActive()) return;
+        try { connection.close(); }
+        catch (SQLException exception) { throw new DatabaseException("Could not close database connection", exception); }
     }
 }

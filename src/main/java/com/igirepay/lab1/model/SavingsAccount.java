@@ -1,21 +1,25 @@
 package com.igirepay.lab1.model;
 
-import com.igirepay.lab1.exceptions.InvalidAmountException;
-import com.igirepay.lab1.exceptions.WithdrawalLimitExceededException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.UUID;
+
+import com.igirepay.lab1.exceptions.InvalidAmountException;
+import com.igirepay.lab1.exceptions.WithdrawalLimitExceededException;
 
 public class SavingsAccount extends Account {
     public static final int DAILY_WITHDRAWAL_LIMIT = 3;
 
-    public SavingsAccount(UUID customerId, String hashedPin) {
+    public SavingsAccount(int customerId, String hashedPin) {
         super(AccountType.SAVINGS, customerId, hashedPin);
     }
 
-    public SavingsAccount(UUID accountId, UUID customerId, BigDecimal balance, String hashedPin) {
-        super(accountId, customerId, AccountType.SAVINGS, balance, LocalDateTime.now(), true, hashedPin);
+    public SavingsAccount(int accountId, int customerId, BigDecimal balance, String hashedPin) {
+        super(accountId, customerId, AccountType.SAVINGS, AccountType.SAVINGS.name(), balance, LocalDateTime.now(), true, hashedPin);
+    }
+
+    public SavingsAccount(int accountId, int customerId, String accountName, BigDecimal balance, String hashedPin) {
+        super(accountId, customerId, AccountType.SAVINGS, accountName, balance, LocalDateTime.now(), true, hashedPin);
     }
 
     @Override
@@ -35,9 +39,7 @@ public class SavingsAccount extends Account {
 
     @Override
     public Transaction processTransaction(Transaction transaction) {
-        if (transaction == null) {
-            throw new InvalidAmountException("Transaction is required.");
-        }
+        if (transaction == null) throw new InvalidAmountException("Transaction is required.");
         requireActive();
         BigDecimal amount = requireValidAmount(transaction.getAmount());
         transaction.setAccountId(getAccountId());
@@ -59,9 +61,9 @@ public class SavingsAccount extends Account {
     private void ensureDailyWithdrawalLimit() {
         LocalDate today = LocalDate.now();
         long withdrawalsToday = getTransactionHistory().stream()
-                .filter(transaction -> transaction.getTransactionType() == TransactionType.WITHDRAWAL)
-                .filter(transaction -> transaction.getStatus() == TransactionStatus.SUCCESS)
-                .filter(transaction -> transaction.getTimestamp().toLocalDate().equals(today))
+                .filter(t -> t.getTransactionType() == TransactionType.WITHDRAWAL)
+                .filter(t -> t.getStatus() == TransactionStatus.SUCCESS)
+                .filter(t -> t.getTimestamp().toLocalDate().equals(today))
                 .count();
         if (withdrawalsToday >= DAILY_WITHDRAWAL_LIMIT) {
             throw new WithdrawalLimitExceededException(DAILY_WITHDRAWAL_LIMIT);
@@ -70,15 +72,8 @@ public class SavingsAccount extends Account {
 
     @Override
     public String toString() {
-        return "SavingsAccount{" +
-                "accountId=" + getAccountId() +
-                ", customerId=" + getCustomerId() +
-                ", accountType=" + getAccountType() +
-                ", balance=" + getBalance() +
-                ", createdAt=" + getCreatedAt() +
-                ", isActive=" + isActive() +
-                ", dailyWithdrawalLimit=" + DAILY_WITHDRAWAL_LIMIT +
-                ", transactionCount=" + getTransactionHistory().size() +
-                '}';
+        return "SavingsAccount{accountId=" + getAccountId() + ", customerId=" + getCustomerId()
+                + ", balance=" + getBalance() + ", isActive=" + isActive()
+                + ", dailyWithdrawalLimit=" + DAILY_WITHDRAWAL_LIMIT + '}';
     }
 }

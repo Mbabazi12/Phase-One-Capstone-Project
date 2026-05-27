@@ -1,5 +1,13 @@
 package com.igirepay;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.util.List;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.UUID;
+
 import com.igirepay.lab1.exceptions.AccountLockedException;
 import com.igirepay.lab1.exceptions.AccountNotFoundException;
 import com.igirepay.lab1.exceptions.DatabaseException;
@@ -17,17 +25,6 @@ import com.igirepay.lab1.service.AccountService;
 import com.igirepay.lab1.service.AuthService;
 import com.igirepay.lab1.service.CustomerService;
 import com.igirepay.lab1.service.TransactionService;
-import com.igirepay.lab2.service.ReportService;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.UUID;
 
 public class Main {
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.00");
@@ -36,7 +33,6 @@ public class Main {
     private static final AuthService authService = new AuthService(customerService);
     private static final AccountService accountService = new AccountService();
     private static final TransactionService transactionService = new TransactionService();
-    private static final ReportService reportService = new ReportService();
 
     public static void main(String[] args) {
         try (Scanner scanner = new Scanner(System.in)) {
@@ -110,10 +106,7 @@ public class Main {
                 changePin(scanner, customer);
                 customer = customerService.refresh(customer);
             }
-            case 8 -> exportTransactionHistory(scanner, customer);
-            case 9 -> viewDailySummary(scanner, customer);
-            case 10 -> reportService.printFullStatement(customer.getCustomerId());
-            case 11 -> {
+            case 8 -> {
                 System.out.println("Logged out.");
                 return new MenuResult(null, false);
             }
@@ -136,10 +129,7 @@ public class Main {
         System.out.println("5. View transaction history");
         System.out.println("6. Create savings / wallet account");
         System.out.println("7. Change PIN");
-        System.out.println("8. Export transaction history to CSV");
-        System.out.println("9. View daily summary");
-        System.out.println("10. View full account statement");
-        System.out.println("11. Logout");
+        System.out.println("8. Logout");
         System.out.println("0. Exit");
     }
 
@@ -219,8 +209,7 @@ public class Main {
         System.out.print("PIN: ");
         String pin = scanner.nextLine();
 
-        transactionService.validateAccountPin(sender, pin);
-        BigDecimal fee = transactionService.previewTransferFee(sender, recipientPhone, amount, customerService);
+        BigDecimal fee = transactionService.previewTransferFee(amount);
         System.out.println("Fee: " + formatMoney(fee) + ". Total deducted: " + formatMoney(amount.add(fee)));
 
         String referenceId = UUID.randomUUID().toString();
@@ -283,29 +272,8 @@ public class Main {
 
         AuthService.validatePinFormat(newPin);
         customer.setHashedPin(AuthService.hashPin(newPin));
-        customer.resetFailedAttempts();
         customerService.update(customer);
         System.out.println("PIN changed successfully.");
-    }
-
-    private static void exportTransactionHistory(Scanner scanner, Customer customer) {
-        Account account = selectAccount(scanner, customer);
-        if (account == null) return;
-
-        LocalDate from = readDate(scanner, "From date (yyyy-MM-dd): ");
-        LocalDate to = readDate(scanner, "To date (yyyy-MM-dd): ");
-        System.out.print("CSV file path: ");
-        String filePath = scanner.nextLine().trim();
-        reportService.exportToCSV(account.getAccountId(), from, to, filePath);
-        System.out.println("Transaction history exported to " + filePath + ".");
-    }
-
-    private static void viewDailySummary(Scanner scanner, Customer customer) {
-        Account account = selectAccount(scanner, customer);
-        if (account == null) return;
-
-        LocalDate date = readDate(scanner, "Summary date (yyyy-MM-dd): ");
-        reportService.printDailySummary(account.getAccountId(), date);
     }
 
     private static Account selectAccount(Scanner scanner, Customer customer) {
@@ -349,18 +317,6 @@ public class Main {
                 return new BigDecimal(input).stripTrailingZeros();
             } catch (NumberFormatException exception) {
                 System.out.println("Invalid amount, please enter a numeric value.");
-            }
-        }
-    }
-
-    private static LocalDate readDate(Scanner scanner, String prompt) {
-        while (true) {
-            System.out.print(prompt);
-            String input = scanner.nextLine().trim();
-            try {
-                return LocalDate.parse(input);
-            } catch (DateTimeParseException exception) {
-                System.out.println("Invalid date, please use yyyy-MM-dd.");
             }
         }
     }

@@ -7,27 +7,33 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 public abstract class Account {
-    private UUID accountId;
-    private UUID customerId;
+    private int accountId;
+    private int customerId;
     private AccountType accountType;
+    private String accountName;
     private BigDecimal balance;
     private LocalDateTime createdAt;
     private boolean active;
     private String hashedPin;
     private List<Transaction> transactionHistory;
 
-    protected Account(AccountType accountType, UUID customerId, String hashedPin) {
-        this(UUID.randomUUID(), customerId, accountType, BigDecimal.ZERO, LocalDateTime.now(), true, hashedPin);
+    protected Account(AccountType accountType, int customerId, String hashedPin) {
+        this(0, customerId, accountType, accountType.name(), BigDecimal.ZERO, LocalDateTime.now(), true, hashedPin);
     }
 
-    protected Account(UUID accountId, UUID customerId, AccountType accountType, BigDecimal balance,
+    protected Account(int accountId, int customerId, AccountType accountType, BigDecimal balance,
                       LocalDateTime createdAt, boolean active, String hashedPin) {
-        setAccountId(accountId);
-        setCustomerId(customerId);
+        this(accountId, customerId, accountType, accountType.name(), balance, createdAt, active, hashedPin);
+    }
+
+    protected Account(int accountId, int customerId, AccountType accountType, String accountName,
+                      BigDecimal balance, LocalDateTime createdAt, boolean active, String hashedPin) {
+        this.accountId = accountId;
+        this.customerId = customerId;
         setAccountType(accountType);
+        setAccountName(accountName);
         setBalance(balance);
         setCreatedAt(createdAt);
         setActive(active);
@@ -41,61 +47,49 @@ public abstract class Account {
 
     public abstract Transaction processTransaction(Transaction transaction);
 
-    public UUID getAccountId() {
-        return accountId;
+    public int getAccountId() { return accountId; }
+
+    public void setAccountId(int accountId) { this.accountId = accountId; }
+
+    public int getCustomerId() { return customerId; }
+
+    public void setCustomerId(int customerId) { this.customerId = customerId; }
+
+    public String getAccountName() { return accountName; }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName == null || accountName.isBlank()
+                ? (accountType != null ? accountType.name() : "ACCOUNT")
+                : accountName.trim();
     }
 
-    public void setAccountId(UUID accountId) {
-        this.accountId = accountId == null ? UUID.randomUUID() : accountId;
-    }
-
-    public UUID getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(UUID customerId) {
-        this.customerId = customerId == null ? UUID.randomUUID() : customerId;
-    }
-
-    public AccountType getAccountType() {
-        return accountType;
-    }
+    public AccountType getAccountType() { return accountType; }
 
     public void setAccountType(AccountType accountType) {
         this.accountType = accountType == null ? AccountType.WALLET : accountType;
     }
 
-    public BigDecimal getBalance() {
-        return balance;
-    }
+    public BigDecimal getBalance() { return balance; }
 
     public void setBalance(BigDecimal balance) {
-        BigDecimal normalizedBalance = normalizeMoney(balance);
-        if (normalizedBalance.compareTo(BigDecimal.ZERO) < 0) {
+        BigDecimal normalized = normalizeMoney(balance);
+        if (normalized.compareTo(BigDecimal.ZERO) < 0) {
             throw new InvalidAmountException("Balance cannot be negative.");
         }
-        this.balance = normalizedBalance;
+        this.balance = normalized;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt == null ? LocalDateTime.now() : createdAt;
     }
 
-    public boolean isActive() {
-        return active;
-    }
+    public boolean isActive() { return active; }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
+    public void setActive(boolean active) { this.active = active; }
 
-    public String getHashedPin() {
-        return hashedPin;
-    }
+    public String getHashedPin() { return hashedPin; }
 
     public void setHashedPin(String hashedPin) {
         this.hashedPin = hashedPin == null ? "" : hashedPin.trim();
@@ -115,23 +109,19 @@ public abstract class Account {
     }
 
     public void addTransaction(Transaction transaction) {
-        if (transaction != null) {
-            transactionHistory.add(transaction);
-        }
+        if (transaction != null) transactionHistory.add(transaction);
     }
 
     protected void requireActive() {
-        if (!active) {
-            throw new IllegalStateException("Account is inactive.");
-        }
+        if (!active) throw new IllegalStateException("Account is inactive.");
     }
 
     protected BigDecimal requireValidAmount(BigDecimal amount) {
-        BigDecimal normalizedAmount = normalizeMoney(amount);
-        if (normalizedAmount.compareTo(BigDecimal.ZERO) <= 0) {
+        BigDecimal normalized = normalizeMoney(amount);
+        if (normalized.compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidAmountException("Amount must be greater than zero.");
         }
-        return normalizedAmount;
+        return normalized;
     }
 
     protected void credit(BigDecimal amount) {
@@ -139,20 +129,20 @@ public abstract class Account {
     }
 
     protected void debit(BigDecimal amount) {
-        BigDecimal normalizedAmount = normalizeMoney(amount);
-        if (balance.compareTo(normalizedAmount) < 0) {
-            throw new InsufficientBalanceException(normalizedAmount, balance);
+        BigDecimal normalized = normalizeMoney(amount);
+        if (balance.compareTo(normalized) < 0) {
+            throw new InsufficientBalanceException(normalized, balance);
         }
-        balance = normalizeMoney(balance.subtract(normalizedAmount));
+        balance = normalizeMoney(balance.subtract(normalized));
     }
 
     protected Transaction createTransaction(String referenceId, TransactionType transactionType,
                                             BigDecimal amount, String description) {
         return new Transaction(
-                UUID.randomUUID(),
+                0,
                 referenceId,
                 accountId,
-                null,
+                0,
                 transactionType,
                 amount,
                 BigDecimal.ZERO,
@@ -168,15 +158,8 @@ public abstract class Account {
 
     @Override
     public String toString() {
-        return "Account{" +
-                "accountId=" + accountId +
-                ", customerId=" + customerId +
-                ", accountType=" + accountType +
-                ", balance=" + balance +
-                ", createdAt=" + createdAt +
-                ", isActive=" + active +
-                ", hashedPin='" + hashedPin + '\'' +
-                ", transactionCount=" + transactionHistory.size() +
-                '}';
+        return "Account{accountId=" + accountId + ", customerId=" + customerId
+                + ", accountType=" + accountType + ", balance=" + balance
+                + ", isActive=" + active + '}';
     }
 }
