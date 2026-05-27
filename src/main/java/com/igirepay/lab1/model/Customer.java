@@ -14,8 +14,6 @@ public class Customer {
     private String phoneNumber;
     private String hashedPin;
     private List<Account> accounts;
-    private boolean locked;
-    private int failedPinAttempts;
     private LocalDateTime createdAt;
 
     public Customer() {
@@ -34,45 +32,31 @@ public class Customer {
         setHashedPin(hashedPin);
         setCreatedAt(createdAt);
         this.accounts = new ArrayList<>();
-        this.locked = false;
-        this.failedPinAttempts = 0;
     }
 
-    public UUID getCustomerId() {
-        return customerId;
-    }
+    public UUID getCustomerId() { return customerId; }
 
     public void setCustomerId(UUID customerId) {
         this.customerId = customerId == null ? UUID.randomUUID() : customerId;
     }
 
-    public String getFullName() {
-        return fullName;
-    }
+    public String getFullName() { return fullName; }
 
     public void setFullName(String fullName) {
-        String normalizedName = fullName == null ? "" : fullName.trim();
-        if (normalizedName.isEmpty()) {
-            throw new IllegalArgumentException("Full name is required.");
-        }
-        this.fullName = normalizedName;
+        String normalized = fullName == null ? "" : fullName.trim();
+        if (normalized.isEmpty()) throw new IllegalArgumentException("Full name is required.");
+        this.fullName = normalized;
     }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
 
     public void setPhoneNumber(String phoneNumber) {
-        String normalizedPhone = phoneNumber == null ? "" : phoneNumber.trim();
-        if (!normalizedPhone.matches("\\d{10}")) {
-            throw new InvalidPhoneNumberException(phoneNumber);
-        }
-        this.phoneNumber = normalizedPhone;
+        String normalized = phoneNumber == null ? "" : phoneNumber.trim();
+        if (!normalized.matches("\\d{10}")) throw new InvalidPhoneNumberException(phoneNumber);
+        this.phoneNumber = normalized;
     }
 
-    public String getHashedPin() {
-        return hashedPin;
-    }
+    public String getHashedPin() { return hashedPin; }
 
     public void setHashedPin(String hashedPin) {
         this.hashedPin = hashedPin == null ? "" : hashedPin.trim();
@@ -81,74 +65,34 @@ public class Customer {
         }
     }
 
-    public List<Account> getAccounts() {
-        return Collections.unmodifiableList(accounts);
-    }
+    public List<Account> getAccounts() { return Collections.unmodifiableList(accounts); }
 
     public void setAccounts(List<Account> accounts) {
         this.accounts = new ArrayList<>();
         if (accounts != null) {
-            for (Account account : accounts) {
-                addAccount(account);
-            }
+            for (Account account : accounts) addAccount(account);
         }
     }
 
-    public boolean isLocked() {
-        return locked;
-    }
-
-    public void setLocked(boolean locked) {
-        this.locked = locked;
-    }
-
-    public int getFailedPinAttempts() {
-        return failedPinAttempts;
-    }
-
-    public void setFailedPinAttempts(int failedPinAttempts) {
-        this.failedPinAttempts = Math.max(0, failedPinAttempts);
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt == null ? LocalDateTime.now() : createdAt;
     }
 
     public void addAccount(Account account) {
-        if (account == null) {
-            return;
-        }
+        if (account == null) return;
         account.setCustomerId(customerId);
         account.setHashedPin(hashedPin);
         accounts.add(account);
     }
 
     public Optional<Account> getAccountByType(AccountType accountType) {
-        return accounts.stream()
-                .filter(account -> account.getAccountType() == accountType)
-                .findFirst();
+        return accounts.stream().filter(a -> a.getAccountType() == accountType).findFirst();
     }
 
     public Optional<Account> getAccountById(UUID accountId) {
-        return accounts.stream()
-                .filter(account -> account.getAccountId().equals(accountId))
-                .findFirst();
-    }
-
-    public void lockAccount() {
-        locked = true;
-    }
-
-    public void resetFailedAttempts() {
-        failedPinAttempts = 0;
-    }
-
-    public void recordFailedPinAttempt() {
-        failedPinAttempts++;
+        return accounts.stream().filter(a -> a.getAccountId().equals(accountId)).findFirst();
     }
 
     public boolean validatePin(String rawPin) {
@@ -158,15 +102,6 @@ public class Customer {
 
     @Override
     public String toString() {
-        return "Customer{" +
-                "customerId=" + customerId +
-                ", fullName='" + fullName + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", hashedPin='" + hashedPin + '\'' +
-                ", accountCount=" + accounts.size() +
-                ", isLocked=" + locked +
-                ", failedPinAttempts=" + failedPinAttempts +
-                ", createdAt=" + createdAt +
-                '}';
+        return "Customer{customerId=" + customerId + ", fullName='" + fullName + "', phoneNumber='" + phoneNumber + "'}";
     }
 }

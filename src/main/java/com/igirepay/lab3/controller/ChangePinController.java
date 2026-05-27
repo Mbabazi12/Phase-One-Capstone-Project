@@ -50,7 +50,6 @@ public class ChangePinController {
         try {
             AuthService.validatePinFormat(newPin);
             customer.setHashedPin(AuthService.hashPin(newPin));
-            customer.resetFailedAttempts();
             customerService.update(customer);
             SessionManager.setCurrentCustomer(customerService.refresh(customer));
             messageLabel.setText("PIN updated successfully.");

@@ -1,6 +1,5 @@
 package com.igirepay.lab3.controller;
 
-import com.igirepay.lab1.exceptions.AccountLockedException;
 import com.igirepay.lab1.exceptions.AccountNotFoundException;
 import com.igirepay.lab1.exceptions.DatabaseException;
 import com.igirepay.lab1.exceptions.InvalidPinException;
@@ -21,10 +20,8 @@ public class LoginController {
     @FXML private PasswordField pinField;
     @FXML private Label errorLabel;
     @FXML private Button loginButton;
-    @FXML private Button registerButton;
 
     private final AuthService authService;
-    private int failedAttempts = 0;
 
     public LoginController() {
         CustomerService customerService = new CustomerService();
@@ -46,18 +43,8 @@ public class LoginController {
             Customer customer = authService.login(phone, pin);
             SessionManager.setCurrentCustomer(customer);
             SceneManager.switchScene("/fxml/dashboard.fxml");
-        } catch (AccountLockedException e) {
-            failedAttempts = 3;
-            loginButton.setDisable(true);
-            errorLabel.setText("Too many failed attempts. Please restart the application.");
         } catch (InvalidPinException e) {
-            failedAttempts++;
-            if (failedAttempts >= 3) {
-                loginButton.setDisable(true);
-                errorLabel.setText("Too many failed attempts. Please restart the application.");
-            } else {
-                errorLabel.setText("Invalid PIN. " + e.getAttemptsRemaining() + " attempt(s) remaining.");
-            }
+            errorLabel.setText("Incorrect PIN. Please try again.");
         } catch (AccountNotFoundException e) {
             errorLabel.setText("No account found for that phone number.");
         } catch (DatabaseException e) {

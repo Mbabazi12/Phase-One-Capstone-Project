@@ -20,19 +20,20 @@ import java.util.UUID;
 
 public class AccountDAO {
     private static final String ACCOUNT_COLUMNS =
-            "account_id, customer_id, account_type, balance, created_at, is_active, pin";
+            "account_id, customer_id, account_type, account_name, balance, created_at, is_active, pin";
 
     public Account create(Account account, UUID customerId) {
-        String sql = "INSERT INTO accounts (" + ACCOUNT_COLUMNS + ") VALUES (?::uuid, ?::uuid, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO accounts (" + ACCOUNT_COLUMNS + ") VALUES (?::uuid, ?::uuid, ?, ?, ?, ?, ?, ?)";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, account.getAccountId().toString());
             statement.setString(2, customerId.toString());
             statement.setString(3, account.getAccountType().name());
-            statement.setBigDecimal(4, account.getBalance());
-            statement.setTimestamp(5, Timestamp.valueOf(account.getCreatedAt()));
-            statement.setBoolean(6, account.isActive());
-            statement.setString(7, account.getHashedPin());
+            statement.setString(4, account.getAccountName());
+            statement.setBigDecimal(5, account.getBalance());
+            statement.setTimestamp(6, Timestamp.valueOf(account.getCreatedAt()));
+            statement.setBoolean(7, account.isActive());
+            statement.setString(8, account.getHashedPin());
             statement.executeUpdate();
             return account;
         } catch (SQLException exception) {
@@ -125,12 +126,13 @@ public class AccountDAO {
         AccountType accountType = AccountType.valueOf(resultSet.getString("account_type"));
         UUID accountId = UUID.fromString(resultSet.getString("account_id"));
         UUID customerId = UUID.fromString(resultSet.getString("customer_id"));
+        String accountName = resultSet.getString("account_name");
         BigDecimal balance = resultSet.getBigDecimal("balance");
         String hashedPin = resultSet.getString("pin");
 
         Account account = accountType == AccountType.WALLET
-                ? new WalletAccount(accountId, customerId, balance, hashedPin)
-                : new SavingsAccount(accountId, customerId, balance, hashedPin);
+                ? new WalletAccount(accountId, customerId, accountName, balance, hashedPin)
+                : new SavingsAccount(accountId, customerId, accountName, balance, hashedPin);
         account.setCreatedAt(resultSet.getTimestamp("created_at").toLocalDateTime());
         account.setActive(resultSet.getBoolean("is_active"));
         return account;

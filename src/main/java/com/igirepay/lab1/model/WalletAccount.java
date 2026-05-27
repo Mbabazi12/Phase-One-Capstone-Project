@@ -15,7 +15,11 @@ public class WalletAccount extends Account {
     }
 
     public WalletAccount(UUID accountId, UUID customerId, BigDecimal balance, String hashedPin) {
-        super(accountId, customerId, AccountType.WALLET, balance, LocalDateTime.now(), true, hashedPin);
+        super(accountId, customerId, AccountType.WALLET, AccountType.WALLET.name(), balance, LocalDateTime.now(), true, hashedPin);
+    }
+
+    public WalletAccount(UUID accountId, UUID customerId, String accountName, BigDecimal balance, String hashedPin) {
+        super(accountId, customerId, AccountType.WALLET, accountName, balance, LocalDateTime.now(), true, hashedPin);
     }
 
     @Override

@@ -16,19 +16,17 @@ import java.util.UUID;
 
 public class CustomerDAO {
     private static final String CUSTOMER_COLUMNS =
-            "customer_id, full_name, phone_number, pin, is_locked, failed_attempts, created_at";
+            "customer_id, full_name, phone_number, pin, created_at";
 
     public Customer create(Customer customer) {
-        String sql = "INSERT INTO customers (" + CUSTOMER_COLUMNS + ") VALUES (?::uuid, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO customers (" + CUSTOMER_COLUMNS + ") VALUES (?::uuid, ?, ?, ?, ?)";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, customer.getCustomerId().toString());
             statement.setString(2, customer.getFullName());
             statement.setString(3, customer.getPhoneNumber());
             statement.setString(4, customer.getHashedPin());
-            statement.setBoolean(5, customer.isLocked());
-            statement.setInt(6, customer.getFailedPinAttempts());
-            statement.setTimestamp(7, Timestamp.valueOf(customer.getCreatedAt()));
+            statement.setTimestamp(5, Timestamp.valueOf(customer.getCreatedAt()));
             statement.executeUpdate();
             return customer;
         } catch (SQLException exception) {
@@ -44,9 +42,7 @@ public class CustomerDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, phone);
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return Optional.of(mapCustomer(resultSet));
-                }
+                if (resultSet.next()) return Optional.of(mapCustomer(resultSet));
                 return Optional.empty();
             }
         } catch (SQLException exception) {
@@ -62,9 +58,7 @@ public class CustomerDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, id.toString());
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return Optional.of(mapCustomer(resultSet));
-                }
+                if (resultSet.next()) return Optional.of(mapCustomer(resultSet));
                 return Optional.empty();
             }
         } catch (SQLException exception) {
@@ -80,9 +74,7 @@ public class CustomerDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
             List<Customer> customers = new ArrayList<>();
-            while (resultSet.next()) {
-                customers.add(mapCustomer(resultSet));
-            }
+            while (resultSet.next()) customers.add(mapCustomer(resultSet));
             return customers;
         } catch (SQLException exception) {
             throw new DatabaseException("Could not list customers", exception);
@@ -92,59 +84,15 @@ public class CustomerDAO {
     }
 
     public void update(Customer customer) {
-        String sql = "UPDATE customers SET full_name = ?, pin = ?, is_locked = ?, failed_attempts = ? " +
-                "WHERE customer_id = ?::uuid";
+        String sql = "UPDATE customers SET full_name = ?, pin = ? WHERE customer_id = ?::uuid";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, customer.getFullName());
             statement.setString(2, customer.getHashedPin());
-            statement.setBoolean(3, customer.isLocked());
-            statement.setInt(4, customer.getFailedPinAttempts());
-            statement.setString(5, customer.getCustomerId().toString());
+            statement.setString(3, customer.getCustomerId().toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new DatabaseException("Could not update customer", exception);
-        } finally {
-            closeIfStandalone(connection);
-        }
-    }
-
-    public void incrementFailedAttempts(UUID id) {
-        String sql = "UPDATE customers SET failed_attempts = failed_attempts + 1 WHERE customer_id = ?::uuid";
-        Connection connection = DBConnection.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, id.toString());
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not increment failed PIN attempts", exception);
-        } finally {
-            closeIfStandalone(connection);
-        }
-    }
-
-    public void lockAccount(UUID id) {
-        String sql = "UPDATE customers SET is_locked = ? WHERE customer_id = ?::uuid";
-        Connection connection = DBConnection.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setBoolean(1, true);
-            statement.setString(2, id.toString());
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not lock customer account", exception);
-        } finally {
-            closeIfStandalone(connection);
-        }
-    }
-
-    public void resetFailedAttempts(UUID id) {
-        String sql = "UPDATE customers SET failed_attempts = ? WHERE customer_id = ?::uuid";
-        Connection connection = DBConnection.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, 0);
-            statement.setString(2, id.toString());
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not reset failed PIN attempts", exception);
         } finally {
             closeIfStandalone(connection);
         }
@@ -164,26 +112,18 @@ public class CustomerDAO {
     }
 
     private Customer mapCustomer(ResultSet resultSet) throws SQLException {
-        Customer customer = new Customer(
+        return new Customer(
                 UUID.fromString(resultSet.getString("customer_id")),
                 resultSet.getString("full_name"),
                 resultSet.getString("phone_number"),
                 resultSet.getString("pin"),
                 resultSet.getTimestamp("created_at").toLocalDateTime()
         );
-        customer.setLocked(resultSet.getBoolean("is_locked"));
-        customer.setFailedPinAttempts(resultSet.getInt("failed_attempts"));
-        return customer;
     }
 
     private void closeIfStandalone(Connection connection) {
-        if (DBConnection.isTransactionConnectionActive()) {
-            return;
-        }
-        try {
-            connection.close();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not close database connection", exception);
-        }
+        if (DBConnection.isTransactionConnectionActive()) return;
+        try { connection.close(); }
+        catch (SQLException exception) { throw new DatabaseException("Could not close database connection", exception); }
     }
 }

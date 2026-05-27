@@ -219,8 +219,7 @@ public class Main {
         System.out.print("PIN: ");
         String pin = scanner.nextLine();
 
-        transactionService.validateAccountPin(sender, pin);
-        BigDecimal fee = transactionService.previewTransferFee(sender, recipientPhone, amount, customerService);
+        BigDecimal fee = transactionService.previewTransferFee(amount);
         System.out.println("Fee: " + formatMoney(fee) + ". Total deducted: " + formatMoney(amount.add(fee)));
 
         String referenceId = UUID.randomUUID().toString();
@@ -283,7 +282,6 @@ public class Main {
 
         AuthService.validatePinFormat(newPin);
         customer.setHashedPin(AuthService.hashPin(newPin));
-        customer.resetFailedAttempts();
         customerService.update(customer);
         System.out.println("PIN changed successfully.");
     }

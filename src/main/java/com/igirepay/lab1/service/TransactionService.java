@@ -2,7 +2,6 @@ package com.igirepay.lab1.service;
 
 import com.igirepay.lab1.exceptions.AccountNotFoundException;
 import com.igirepay.lab1.exceptions.DatabaseException;
-import com.igirepay.lab1.exceptions.DuplicateTransactionException;
 import com.igirepay.lab1.exceptions.InsufficientBalanceException;
 import com.igirepay.lab1.exceptions.InvalidAmountException;
 import com.igirepay.lab1.exceptions.InvalidPinException;
@@ -16,7 +15,6 @@ import com.igirepay.lab1.model.TransactionType;
 import com.igirepay.lab1.model.WalletAccount;
 import com.igirepay.lab2.config.DBConnection;
 import com.igirepay.lab2.dao.AccountDAO;
-import com.igirepay.lab2.dao.ProcessedRequestDAO;
 import com.igirepay.lab2.dao.TransactionDAO;
 
 import java.math.BigDecimal;
@@ -31,26 +29,22 @@ import java.util.UUID;
 public class TransactionService {
     private final AccountDAO accountDAO;
     private final TransactionDAO transactionDAO;
-    private final ProcessedRequestDAO processedRequestDAO;
 
     public TransactionService() {
         this.accountDAO = new AccountDAO();
         this.transactionDAO = new TransactionDAO();
-        this.processedRequestDAO = new ProcessedRequestDAO();
     }
 
     public Transaction deposit(Account account, BigDecimal amount, String referenceId) {
         Connection connection = beginTransaction();
         try {
-            String ref = requireNewReference(referenceId);
-            requireNotProcessed(ref);
+            String ref = requireReference(referenceId);
             Account working = loadAccount(account);
             BigDecimal normalizedAmount = requirePositiveAmount(amount);
 
             Transaction transaction = working.deposit(normalizedAmount, ref);
             accountDAO.updateBalance(working.getAccountId(), working.getBalance());
             transactionDAO.create(transaction);
-            processedRequestDAO.insert(ref);
 
             commit(connection);
             syncAccount(account, working);
@@ -66,8 +60,7 @@ public class TransactionService {
     public Transaction withdraw(Account account, BigDecimal amount, String pin, String referenceId) {
         Connection connection = beginTransaction();
         try {
-            String ref = requireNewReference(referenceId);
-            requireNotProcessed(ref);
+            String ref = requireReference(referenceId);
             Account working = loadAccount(account);
             validateAccountPin(working, pin);
             BigDecimal normalizedAmount = requirePositiveAmount(amount);
@@ -77,7 +70,6 @@ public class TransactionService {
             Transaction transaction = working.withdraw(normalizedAmount, ref);
             accountDAO.updateBalance(working.getAccountId(), working.getBalance());
             transactionDAO.create(transaction);
-            processedRequestDAO.insert(ref);
 
             commit(connection);
             syncAccount(account, working);
@@ -90,49 +82,59 @@ public class TransactionService {
         }
     }
 
+    /**
+     * Transfer between wallet accounts of different customers.
+     * Savings accounts cannot transfer to other users.
+     */
     public List<Transaction> transfer(Account sender, String recipientPhone, BigDecimal amount, String pin,
                                       String referenceId, CustomerService customerService) {
+        if (sender.getAccountType() == AccountType.SAVINGS) {
+            throw new IllegalArgumentException("Savings accounts cannot transfer money to other users.");
+        }
+
         Connection connection = beginTransaction();
         try {
-            String ref = requireNewReference(referenceId);
-            requireNotProcessed(ref);
-
+            String ref = requireReference(referenceId);
             Account workingSender = loadAccount(sender);
             Customer recipient = findRecipient(recipientPhone, customerService);
-            Account recipientAccount = loadAccount(resolveRecipientAccount(workingSender, recipient));
+
+            if (workingSender.getCustomerId().equals(recipient.getCustomerId())) {
+                throw new IllegalArgumentException("Cannot transfer to yourself. Use savings deposit instead.");
+            }
+
+            Account recipientWallet = recipient.getAccountByType(AccountType.WALLET)
+                    .orElseThrow(() -> new AccountNotFoundException(recipientPhone + " wallet account"));
+            Account workingRecipient = loadAccount(recipientWallet);
 
             validateAccountPin(workingSender, pin);
             BigDecimal normalizedAmount = requirePositiveAmount(amount);
-            BigDecimal fee = calculateTransferFee(workingSender, recipient, normalizedAmount);
+            BigDecimal fee = WalletAccount.calculateTransferFee(normalizedAmount);
             ensureSufficientBalance(workingSender, normalizedAmount.add(fee));
 
             List<Transaction> transactions = new ArrayList<>();
 
             Transaction transferOut = new Transaction(ref, workingSender.getAccountId(),
-                    recipientAccount.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount,
+                    workingRecipient.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount,
                     "Transfer to " + recipient.getFullName() + " (" + recipient.getPhoneNumber() + ")");
             workingSender.processTransaction(transferOut);
             transactionDAO.create(transferOut);
             transactions.add(transferOut);
 
-            Transaction transferIn = new Transaction(ref, recipientAccount.getAccountId(),
+            Transaction transferIn = new Transaction(ref, workingRecipient.getAccountId(),
                     workingSender.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount,
-                    "Transfer from account " + workingSender.getAccountId());
-            recipientAccount.processTransaction(transferIn);
+                    "Transfer from " + workingSender.getCustomerId());
+            workingRecipient.processTransaction(transferIn);
             transactionDAO.create(transferIn);
             transactions.add(transferIn);
 
-            if (fee.compareTo(BigDecimal.ZERO) > 0) {
-                Transaction feeTransaction = new Transaction(ref, workingSender.getAccountId(),
-                        null, TransactionType.FEE, fee, "Transfer fee");
-                workingSender.processTransaction(feeTransaction);
-                transactionDAO.create(feeTransaction);
-                transactions.add(feeTransaction);
-            }
+            Transaction feeTransaction = new Transaction(ref, workingSender.getAccountId(),
+                    null, TransactionType.FEE, fee, "Transfer fee (1% of " + normalizedAmount.toPlainString() + ")");
+            workingSender.processTransaction(feeTransaction);
+            transactionDAO.create(feeTransaction);
+            transactions.add(feeTransaction);
 
             accountDAO.updateBalance(workingSender.getAccountId(), workingSender.getBalance());
-            accountDAO.updateBalance(recipientAccount.getAccountId(), recipientAccount.getBalance());
-            processedRequestDAO.insert(ref);
+            accountDAO.updateBalance(workingRecipient.getAccountId(), workingRecipient.getBalance());
 
             commit(connection);
             syncAccount(sender, workingSender);
@@ -145,22 +147,117 @@ public class TransactionService {
         }
     }
 
+    /**
+     * Move money from wallet to own savings account.
+     */
+    public Transaction moveToSavings(Account walletAccount, Account savingsAccount,
+                                     BigDecimal amount, String pin, String referenceId) {
+        if (walletAccount.getAccountType() != AccountType.WALLET) {
+            throw new IllegalArgumentException("Source must be a wallet account.");
+        }
+        if (savingsAccount.getAccountType() != AccountType.SAVINGS) {
+            throw new IllegalArgumentException("Destination must be a savings account.");
+        }
+        if (!walletAccount.getCustomerId().equals(savingsAccount.getCustomerId())) {
+            throw new IllegalArgumentException("Both accounts must belong to the same customer.");
+        }
+
+        Connection connection = beginTransaction();
+        try {
+            String ref = requireReference(referenceId);
+            Account workingWallet = loadAccount(walletAccount);
+            Account workingSavings = loadAccount(savingsAccount);
+
+            validateAccountPin(workingWallet, pin);
+            BigDecimal normalizedAmount = requirePositiveAmount(amount);
+            ensureSufficientBalance(workingWallet, normalizedAmount);
+
+            Transaction out = new Transaction(ref, workingWallet.getAccountId(),
+                    workingSavings.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount,
+                    "Move to savings");
+            workingWallet.processTransaction(out);
+            transactionDAO.create(out);
+
+            Transaction in = new Transaction(ref, workingSavings.getAccountId(),
+                    workingWallet.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount,
+                    "Received from wallet");
+            workingSavings.processTransaction(in);
+            transactionDAO.create(in);
+
+            accountDAO.updateBalance(workingWallet.getAccountId(), workingWallet.getBalance());
+            accountDAO.updateBalance(workingSavings.getAccountId(), workingSavings.getBalance());
+
+            commit(connection);
+            syncAccount(walletAccount, workingWallet);
+            syncAccount(savingsAccount, workingSavings);
+            return out;
+        } catch (RuntimeException exception) {
+            rollback(connection, exception);
+            throw exception;
+        } finally {
+            finishTransaction(connection);
+        }
+    }
+
+    /**
+     * Move money from savings back to own wallet account.
+     */
+    public Transaction moveToWallet(Account savingsAccount, Account walletAccount,
+                                    BigDecimal amount, String pin, String referenceId) {
+        if (savingsAccount.getAccountType() != AccountType.SAVINGS) {
+            throw new IllegalArgumentException("Source must be a savings account.");
+        }
+        if (walletAccount.getAccountType() != AccountType.WALLET) {
+            throw new IllegalArgumentException("Destination must be a wallet account.");
+        }
+        if (!savingsAccount.getCustomerId().equals(walletAccount.getCustomerId())) {
+            throw new IllegalArgumentException("Both accounts must belong to the same customer.");
+        }
+
+        Connection connection = beginTransaction();
+        try {
+            String ref = requireReference(referenceId);
+            Account workingSavings = loadAccount(savingsAccount);
+            Account workingWallet = loadAccount(walletAccount);
+
+            validateAccountPin(workingSavings, pin);
+            BigDecimal normalizedAmount = requirePositiveAmount(amount);
+            ensureSufficientBalance(workingSavings, normalizedAmount);
+            ensureSavingsWithdrawalLimit(workingSavings);
+
+            Transaction out = new Transaction(ref, workingSavings.getAccountId(),
+                    workingWallet.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount,
+                    "Move to wallet");
+            workingSavings.processTransaction(out);
+            transactionDAO.create(out);
+
+            Transaction in = new Transaction(ref, workingWallet.getAccountId(),
+                    workingSavings.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount,
+                    "Received from savings");
+            workingWallet.processTransaction(in);
+            transactionDAO.create(in);
+
+            accountDAO.updateBalance(workingSavings.getAccountId(), workingSavings.getBalance());
+            accountDAO.updateBalance(workingWallet.getAccountId(), workingWallet.getBalance());
+
+            commit(connection);
+            syncAccount(savingsAccount, workingSavings);
+            syncAccount(walletAccount, workingWallet);
+            return out;
+        } catch (RuntimeException exception) {
+            rollback(connection, exception);
+            throw exception;
+        } finally {
+            finishTransaction(connection);
+        }
+    }
+
     public String lookupRecipientName(String phone, CustomerService customerService) {
         return findRecipient(phone, customerService).getFullName();
     }
 
-    public BigDecimal previewTransferFee(Account sender, String recipientPhone, BigDecimal amount,
-                                         CustomerService customerService) {
-        Account workingSender = loadAccount(sender);
-        Customer recipient = findRecipient(recipientPhone, customerService);
-        resolveRecipientAccount(workingSender, recipient);
-        return calculateTransferFee(workingSender, recipient, requirePositiveAmount(amount));
-    }
-
-    public BigDecimal previewTransferTotal(Account sender, String recipientPhone, BigDecimal amount,
-                                           CustomerService customerService) {
-        BigDecimal normalizedAmount = requirePositiveAmount(amount);
-        return normalizedAmount.add(previewTransferFee(sender, recipientPhone, normalizedAmount, customerService));
+    public BigDecimal previewTransferFee(BigDecimal amount) {
+        return WalletAccount.calculateTransferFee(requirePositiveAmount(amount));
     }
 
     public void validateAccountPin(Account account, String rawPin) {
@@ -179,50 +276,17 @@ public class TransactionService {
         return Collections.unmodifiableList(transactionDAO.findDailyWithdrawals(accountId, date));
     }
 
-    public boolean isReferenceProcessed(String referenceId) {
+    private String requireReference(String referenceId) {
         String normalized = referenceId == null ? "" : referenceId.trim();
-        return processedRequestDAO.exists(normalized);
-    }
-
-    private String requireNewReference(String referenceId) {
-        String normalized = referenceId == null ? "" : referenceId.trim();
-        if (normalized.isEmpty()) {
-            throw new IllegalArgumentException("Reference ID is required.");
-        }
+        if (normalized.isEmpty()) throw new IllegalArgumentException("Reference ID is required.");
         return normalized;
     }
 
-    private void requireNotProcessed(String referenceId) {
-        if (processedRequestDAO.exists(referenceId)) {
-            throw new DuplicateTransactionException(referenceId);
-        }
-    }
-
     private Customer findRecipient(String recipientPhone, CustomerService customerService) {
-        if (customerService == null) {
-            throw new AccountNotFoundException("customer service");
-        }
+        if (customerService == null) throw new AccountNotFoundException("customer service");
         String normalizedPhone = AuthService.validatePhone(recipientPhone);
         return customerService.findByPhone(normalizedPhone)
                 .orElseThrow(() -> new AccountNotFoundException(normalizedPhone));
-    }
-
-    private Account resolveRecipientAccount(Account sender, Customer recipient) {
-        boolean sameOwner = sender.getCustomerId().equals(recipient.getCustomerId());
-        AccountType targetType = sameOwner && sender.getAccountType() == AccountType.WALLET
-                ? AccountType.SAVINGS
-                : AccountType.WALLET;
-        return recipient.getAccountByType(targetType)
-                .orElseThrow(() -> new AccountNotFoundException(
-                        recipient.getPhoneNumber() + " " + targetType.name().toLowerCase() + " account"
-                ));
-    }
-
-    private BigDecimal calculateTransferFee(Account sender, Customer recipient, BigDecimal amount) {
-        if (sender.getCustomerId().equals(recipient.getCustomerId())) {
-            return BigDecimal.ZERO;
-        }
-        return WalletAccount.calculateTransferFee(amount);
     }
 
     private void ensureSavingsWithdrawalLimit(Account account) {
@@ -240,25 +304,19 @@ public class TransactionService {
     }
 
     private Account loadAccount(Account account) {
-        if (account == null) {
-            throw new AccountNotFoundException("account");
-        }
+        if (account == null) throw new AccountNotFoundException("account");
         return accountDAO.findById(account.getAccountId())
                 .orElseThrow(() -> new AccountNotFoundException(String.valueOf(account.getAccountId())));
     }
 
     private BigDecimal requirePositiveAmount(BigDecimal amount) {
         BigDecimal normalized = amount == null ? BigDecimal.ZERO : amount.stripTrailingZeros();
-        if (normalized.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidAmountException("Amount must be greater than zero.");
-        }
+        if (normalized.compareTo(BigDecimal.ZERO) <= 0) throw new InvalidAmountException("Amount must be greater than zero.");
         return normalized;
     }
 
     private void syncAccount(Account target, Account source) {
-        if (target == null || source == null) {
-            return;
-        }
+        if (target == null || source == null) return;
         target.setBalance(source.getBalance());
         target.setActive(source.isActive());
         target.setHashedPin(source.getHashedPin());
@@ -279,37 +337,23 @@ public class TransactionService {
     }
 
     private void commit(Connection connection) {
-        try {
-            connection.commit();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not commit database transaction", exception);
-        }
+        try { connection.commit(); }
+        catch (SQLException e) { throw new DatabaseException("Could not commit database transaction", e); }
     }
 
-    private void rollback(Connection connection, RuntimeException originalException) {
-        try {
-            connection.rollback();
-        } catch (SQLException exception) {
-            originalException.addSuppressed(new DatabaseException("Could not roll back database transaction", exception));
-        }
+    private void rollback(Connection connection, RuntimeException original) {
+        try { connection.rollback(); }
+        catch (SQLException e) { original.addSuppressed(new DatabaseException("Could not roll back", e)); }
     }
 
     private void finishTransaction(Connection connection) {
-        try {
-            connection.setAutoCommit(true);
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not reset database transaction state", exception);
-        } finally {
-            DBConnection.clearTransactionConnection();
-            closeConnection(connection);
-        }
+        try { connection.setAutoCommit(true); }
+        catch (SQLException e) { throw new DatabaseException("Could not reset transaction state", e); }
+        finally { DBConnection.clearTransactionConnection(); closeConnection(connection); }
     }
 
     private void closeConnection(Connection connection) {
-        try {
-            connection.close();
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not close database connection", exception);
-        }
+        try { connection.close(); }
+        catch (SQLException e) { throw new DatabaseException("Could not close database connection", e); }
     }
 }

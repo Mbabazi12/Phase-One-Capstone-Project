@@ -2,92 +2,137 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<ScrollPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.igirepay.lab3.controller.TransactionController"
-            fitToWidth="true" fitToHeight="false"
-            style="-fx-padding: 0;">
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.TransactionController">
 
-    <VBox spacing="20" style="-fx-padding: 30;" minWidth="500">
+    <top>
+        <VBox style="-fx-padding: 16 20 6 20;">
+            <Label text="Transactions" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+        </VBox>
+    </top>
 
-        <Label text="Transactions" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
 
-        <!-- Deposit -->
-        <TitledPane text="Deposit" collapsible="false">
-            <GridPane hgap="10" vgap="8" style="-fx-padding: 12;">
-                <columnConstraints>
-                    <ColumnConstraints minWidth="130"/>
-                    <ColumnConstraints hgrow="ALWAYS"/>
-                </columnConstraints>
+            <!-- ── DEPOSIT ── -->
+            <Tab text="Deposit">
+                <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
+                    <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">
+                        <Label text="Deposit money into an account" style="-fx-font-size: 13;"/>
+                        <GridPane hgap="12" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="140"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                            <Label text="Account:"      GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="depositAccountCombo" promptText="Select account"
+                                      maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <Label text="Amount (RWF):" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                            <TextField fx:id="depositAmountField" promptText="e.g. 5000"
+                                       GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        </GridPane>
+                        <Button text="Deposit" onAction="#handleDeposit" prefWidth="140"/>
+                        <Label fx:id="depositResultLabel" text="" wrapText="true"/>
+                    </VBox>
+                </ScrollPane>
+            </Tab>
 
-                <Label text="Account:"      GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                <ComboBox fx:id="depositAccountCombo" promptText="Select account"
-                          maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+            <!-- ── WITHDRAW ── -->
+            <Tab text="Withdraw">
+                <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
+                    <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">
+                        <Label text="Withdraw money from an account" style="-fx-font-size: 13;"/>
+                        <GridPane hgap="12" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="140"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                            <Label text="Account:"      GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="withdrawAccountCombo" promptText="Select account"
+                                      maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <Label text="Amount (RWF):" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                            <TextField fx:id="withdrawAmountField" promptText="e.g. 2000"
+                                       GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                            <Label text="PIN:"          GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                            <PasswordField fx:id="withdrawPinField" promptText="5-digit PIN"
+                                           GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        </GridPane>
+                        <Button text="Withdraw" onAction="#handleWithdraw" prefWidth="140"/>
+                        <Label fx:id="withdrawResultLabel" text="" wrapText="true"/>
+                    </VBox>
+                </ScrollPane>
+            </Tab>
 
-                <Label text="Amount (RWF):" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                <TextField fx:id="depositAmountField" promptText="e.g. 5000"
-                           GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+            <!-- ── TRANSFER ── -->
+            <Tab text="Transfer">
+                <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
+                    <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">
+                        <Label text="Transfer to another customer's wallet (1% fee applies)" style="-fx-font-size: 13;"/>
+                        <GridPane hgap="12" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="140"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                            <Label text="From Wallet:"       GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="transferAccountCombo" promptText="Select wallet account"
+                                      maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <Label text="Recipient Phone:"   GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                            <HBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                                <TextField fx:id="transferRecipientPhoneField" promptText="10-digit phone" HBox.hgrow="ALWAYS"/>
+                                <Button text="Look up" onAction="#handleLookupRecipient" prefWidth="80"/>
+                            </HBox>
+                            <Label text=""                   GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                            <Label fx:id="transferRecipientNameLabel" text="" wrapText="true"
+                                   GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                            <Label text="Amount (RWF):"      GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                            <TextField fx:id="transferAmountField" promptText="e.g. 10000"
+                                       onKeyReleased="#handleTransferAmountChanged"
+                                       GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                            <Label text=""                   GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                            <Label fx:id="transferFeeLabel" text="" style="-fx-font-style: italic;"
+                                   GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                            <Label text="PIN:"               GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                            <PasswordField fx:id="transferPinField" promptText="5-digit PIN"
+                                           GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                        </GridPane>
+                        <Button text="Transfer" onAction="#handleTransfer" prefWidth="140"/>
+                        <Label fx:id="transferResultLabel" text="" wrapText="true"/>
+                    </VBox>
+                </ScrollPane>
+            </Tab>
 
-                <Button text="Deposit" onAction="#handleDeposit" prefWidth="100"
-                        GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-            </GridPane>
-        </TitledPane>
+            <!-- ── SAVINGS MOVE ── -->
+            <Tab text="Savings">
+                <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
+                    <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">
+                        <Label text="Move money between your wallet and savings (no fee)" style="-fx-font-size: 13;"/>
+                        <GridPane hgap="12" vgap="10">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="140"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                            <Label text="Direction:"     GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="savingsDirectionCombo" promptText="Select direction"
+                                      maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                            <Label text="Amount (RWF):"  GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                            <TextField fx:id="savingsAmountField" promptText="e.g. 20000"
+                                       GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                            <Label text="PIN:"           GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                            <PasswordField fx:id="savingsPinField" promptText="5-digit PIN"
+                                           GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        </GridPane>
+                        <Button text="Move Money" onAction="#handleSavingsMove" prefWidth="140"/>
+                        <Label fx:id="savingsResultLabel" text="" wrapText="true"/>
+                    </VBox>
+                </ScrollPane>
+            </Tab>
 
-        <!-- Withdraw -->
-        <TitledPane text="Withdraw" collapsible="false">
-            <GridPane hgap="10" vgap="8" style="-fx-padding: 12;">
-                <columnConstraints>
-                    <ColumnConstraints minWidth="130"/>
-                    <ColumnConstraints hgrow="ALWAYS"/>
-                </columnConstraints>
+        </TabPane>
+    </center>
 
-                <Label text="Account:"      GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                <ComboBox fx:id="withdrawAccountCombo" promptText="Select account"
-                          maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-                <Label text="Amount (RWF):" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                <TextField fx:id="withdrawAmountField" promptText="e.g. 2000"
-                           GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-
-                <Label text="PIN:"          GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                <PasswordField fx:id="withdrawPinField" promptText="5-digit PIN"
-                               GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-
-                <Button text="Withdraw" onAction="#handleWithdraw" prefWidth="100"
-                        GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-            </GridPane>
-        </TitledPane>
-
-        <!-- Transfer -->
-        <TitledPane text="Transfer" collapsible="false">
-            <GridPane hgap="10" vgap="8" style="-fx-padding: 12;">
-                <columnConstraints>
-                    <ColumnConstraints minWidth="130"/>
-                    <ColumnConstraints hgrow="ALWAYS"/>
-                </columnConstraints>
-
-                <Label text="From Account:"    GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                <ComboBox fx:id="transferAccountCombo" promptText="Select account"
-                          maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-                <Label text="Recipient Phone:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                <TextField fx:id="transferRecipientPhoneField" promptText="10-digit phone number"
-                           GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-
-                <Label text="Amount (RWF):"    GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                <TextField fx:id="transferAmountField" promptText="e.g. 10000"
-                           GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-
-                <Label text="PIN:"             GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                <PasswordField fx:id="transferPinField" promptText="5-digit PIN"
-                               GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-
-                <Button text="Transfer" onAction="#handleTransfer" prefWidth="100"
-                        GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-            </GridPane>
-        </TitledPane>
-
-        <Label fx:id="resultLabel" style="-fx-text-fill: green;" text=""/>
-
-        <Button text="Back to Dashboard" onAction="#handleBack" prefWidth="160"/>
-    </VBox>
-</ScrollPane>
+    <bottom>
+        <HBox style="-fx-padding: 12;">
+            <Button text="Back to Dashboard" onAction="#handleBack" prefWidth="160"/>
+        </HBox>
+    </bottom>
+</BorderPane>

@@ -13,6 +13,7 @@ public abstract class Account {
     private UUID accountId;
     private UUID customerId;
     private AccountType accountType;
+    private String accountName;
     private BigDecimal balance;
     private LocalDateTime createdAt;
     private boolean active;
@@ -20,14 +21,20 @@ public abstract class Account {
     private List<Transaction> transactionHistory;
 
     protected Account(AccountType accountType, UUID customerId, String hashedPin) {
-        this(UUID.randomUUID(), customerId, accountType, BigDecimal.ZERO, LocalDateTime.now(), true, hashedPin);
+        this(UUID.randomUUID(), customerId, accountType, accountType.name(), BigDecimal.ZERO, LocalDateTime.now(), true, hashedPin);
     }
 
     protected Account(UUID accountId, UUID customerId, AccountType accountType, BigDecimal balance,
                       LocalDateTime createdAt, boolean active, String hashedPin) {
+        this(accountId, customerId, accountType, accountType.name(), balance, createdAt, active, hashedPin);
+    }
+
+    protected Account(UUID accountId, UUID customerId, AccountType accountType, String accountName,
+                      BigDecimal balance, LocalDateTime createdAt, boolean active, String hashedPin) {
         setAccountId(accountId);
         setCustomerId(customerId);
         setAccountType(accountType);
+        setAccountName(accountName);
         setBalance(balance);
         setCreatedAt(createdAt);
         setActive(active);
@@ -55,6 +62,14 @@ public abstract class Account {
 
     public void setCustomerId(UUID customerId) {
         this.customerId = customerId == null ? UUID.randomUUID() : customerId;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName == null || accountName.isBlank() ? getAccountType().name() : accountName.trim();
     }
 
     public AccountType getAccountType() {

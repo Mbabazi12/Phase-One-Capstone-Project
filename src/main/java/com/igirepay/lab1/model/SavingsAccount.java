@@ -15,7 +15,11 @@ public class SavingsAccount extends Account {
     }
 
     public SavingsAccount(UUID accountId, UUID customerId, BigDecimal balance, String hashedPin) {
-        super(accountId, customerId, AccountType.SAVINGS, balance, LocalDateTime.now(), true, hashedPin);
+        super(accountId, customerId, AccountType.SAVINGS, AccountType.SAVINGS.name(), balance, LocalDateTime.now(), true, hashedPin);
+    }
+
+    public SavingsAccount(UUID accountId, UUID customerId, String accountName, BigDecimal balance, String hashedPin) {
+        super(accountId, customerId, AccountType.SAVINGS, accountName, balance, LocalDateTime.now(), true, hashedPin);
     }
 
     @Override
