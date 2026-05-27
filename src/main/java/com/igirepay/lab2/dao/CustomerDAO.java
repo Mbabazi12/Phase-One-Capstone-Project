@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public class CustomerDAO {
     private static final String CUSTOMER_COLUMNS =
-            "customer_id, full_name, phone_number, hashed_pin, is_locked, failed_attempts, created_at";
+            "customer_id, full_name, phone_number, pin, is_locked, failed_attempts, created_at";
 
     public Customer create(Customer customer) {
         String sql = "INSERT INTO customers (" + CUSTOMER_COLUMNS + ") VALUES (?::uuid, ?, ?, ?, ?, ?, ?)";
@@ -92,7 +92,7 @@ public class CustomerDAO {
     }
 
     public void update(Customer customer) {
-        String sql = "UPDATE customers SET full_name = ?, hashed_pin = ?, is_locked = ?, failed_attempts = ? " +
+        String sql = "UPDATE customers SET full_name = ?, pin = ?, is_locked = ?, failed_attempts = ? " +
                 "WHERE customer_id = ?::uuid";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -168,7 +168,7 @@ public class CustomerDAO {
                 UUID.fromString(resultSet.getString("customer_id")),
                 resultSet.getString("full_name"),
                 resultSet.getString("phone_number"),
-                resultSet.getString("hashed_pin"),
+                resultSet.getString("pin"),
                 resultSet.getTimestamp("created_at").toLocalDateTime()
         );
         customer.setLocked(resultSet.getBoolean("is_locked"));

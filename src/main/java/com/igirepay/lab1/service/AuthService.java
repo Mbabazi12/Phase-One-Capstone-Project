@@ -8,11 +8,7 @@ import com.igirepay.lab1.exceptions.InvalidPinFormatException;
 import com.igirepay.lab1.model.Customer;
 import com.igirepay.lab2.dao.CustomerDAO;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.UUID;
 
 public class AuthService {
@@ -37,7 +33,7 @@ public class AuthService {
                 UUID.randomUUID(),
                 fullName,
                 normalizedPhone,
-                hashPin(pin),
+                pin,
                 LocalDateTime.now()
         );
         customerDAO.create(customer);
@@ -89,12 +85,6 @@ public class AuthService {
     }
 
     public static String hashPin(String pin) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((pin == null ? "" : pin).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 hashing is unavailable.", exception);
-        }
+        return pin == null ? "" : pin.trim();
     }
 }

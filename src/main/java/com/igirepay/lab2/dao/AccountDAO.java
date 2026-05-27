@@ -20,7 +20,7 @@ import java.util.UUID;
 
 public class AccountDAO {
     private static final String ACCOUNT_COLUMNS =
-            "account_id, customer_id, account_type, balance, created_at, is_active, hashed_pin";
+            "account_id, customer_id, account_type, balance, created_at, is_active, pin";
 
     public Account create(Account account, UUID customerId) {
         String sql = "INSERT INTO accounts (" + ACCOUNT_COLUMNS + ") VALUES (?::uuid, ?::uuid, ?, ?, ?, ?, ?)";
@@ -94,7 +94,7 @@ public class AccountDAO {
     }
 
     public void updateHashedPin(UUID accountId, String hashedPin) {
-        String sql = "UPDATE accounts SET hashed_pin = ? WHERE account_id = ?::uuid";
+        String sql = "UPDATE accounts SET pin = ? WHERE account_id = ?::uuid";
         Connection connection = DBConnection.getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, hashedPin);
@@ -126,7 +126,7 @@ public class AccountDAO {
         UUID accountId = UUID.fromString(resultSet.getString("account_id"));
         UUID customerId = UUID.fromString(resultSet.getString("customer_id"));
         BigDecimal balance = resultSet.getBigDecimal("balance");
-        String hashedPin = resultSet.getString("hashed_pin");
+        String hashedPin = resultSet.getString("pin");
 
         Account account = accountType == AccountType.WALLET
                 ? new WalletAccount(accountId, customerId, balance, hashedPin)

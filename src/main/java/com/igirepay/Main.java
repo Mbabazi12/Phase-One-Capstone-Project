@@ -63,7 +63,7 @@ public class Main {
 
     private static Customer handleAuthMenu(Scanner scanner) {
         System.out.println();
-        System.out.println("--- IgirePay Payment Gateway ---");
+        System.out.println(" IgirePay Payment Gateway ");
         System.out.println("1. Register");
         System.out.println("2. Login");
         System.out.println("0. Exit");
@@ -128,7 +128,7 @@ public class Main {
 
     private static void printCustomerMenu(Customer customer) {
         System.out.println();
-        System.out.println("--- Welcome, " + customer.getFullName() + " ---");
+        System.out.println(" Welcome, " + customer.getFullName());
         System.out.println("1. Check balance");
         System.out.println("2. Deposit money");
         System.out.println("3. Withdraw money");

@@ -1,13 +1,9 @@
 package com.igirepay.lab1.model;
 
 import com.igirepay.lab1.exceptions.InvalidPhoneNumberException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -156,17 +152,8 @@ public class Customer {
     }
 
     public boolean validatePin(String rawPin) {
-        return hashedPin.equals(hashPin(rawPin));
-    }
-
-    private String hashPin(String rawPin) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((rawPin == null ? "" : rawPin).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 hashing is unavailable.", exception);
-        }
+        String normalized = rawPin == null ? "" : rawPin.trim();
+        return hashedPin.equals(normalized);
     }
 
     @Override
