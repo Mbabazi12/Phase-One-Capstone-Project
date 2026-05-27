@@ -1,17 +1,18 @@
 package com.igirepay.lab3.controller;
 
+import java.math.RoundingMode;
+
 import com.igirepay.lab1.model.Account;
 import com.igirepay.lab1.model.Customer;
 import com.igirepay.lab3.ui.SceneManager;
 import com.igirepay.lab3.ui.SessionManager;
+
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-
-import java.math.RoundingMode;
 
 public class DashboardController {
 
@@ -37,9 +38,10 @@ public class DashboardController {
         accountsTable.setItems(FXCollections.observableArrayList(customer.getAccounts()));
     }
 
-    @FXML private void handleDeposit()      { SceneManager.switchScene("/fxml/transaction.fxml"); }
-    @FXML private void handleWithdraw()     { SceneManager.switchScene("/fxml/transaction.fxml"); }
-    @FXML private void handleTransfer()     { SceneManager.switchScene("/fxml/transaction.fxml"); }
+    @FXML private void handleDeposit()      { SceneManager.switchScene("/fxml/deposit.fxml"); }
+    @FXML private void handleWithdraw()     { SceneManager.switchScene("/fxml/withdraw.fxml"); }
+    @FXML private void handleTransfer()     { SceneManager.switchScene("/fxml/transfer.fxml"); }
+    @FXML private void handleSavings()      { SceneManager.switchScene("/fxml/savings.fxml"); }
     @FXML private void handleHistory()      { SceneManager.switchScene("/fxml/history.fxml"); }
     @FXML private void handleReports()      { SceneManager.switchScene("/fxml/reports.fxml"); }
     @FXML private void handleChangePin()    { SceneManager.switchScene("/fxml/changePin.fxml"); }

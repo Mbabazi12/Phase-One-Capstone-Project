@@ -1,5 +1,11 @@
 package com.igirepay.lab3.controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import com.igirepay.lab1.exceptions.AccountNotFoundException;
 import com.igirepay.lab1.exceptions.DatabaseException;
 import com.igirepay.lab1.exceptions.InsufficientBalanceException;
@@ -12,18 +18,13 @@ import com.igirepay.lab1.service.CustomerService;
 import com.igirepay.lab1.service.TransactionService;
 import com.igirepay.lab3.ui.SceneManager;
 import com.igirepay.lab3.ui.SessionManager;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 public class TransactionController {
 
@@ -182,7 +183,7 @@ public class TransactionController {
             BigDecimal fee = transactionService.previewTransferFee(amount);
             transferFeeLabel.setText("Fee: " + fee.setScale(2, RoundingMode.HALF_UP).toPlainString()
                     + " RWF  |  Total deducted: " + amount.add(fee).setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF");
-        } catch (NumberFormatException | IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException ignored) {
             transferFeeLabel.setText("");
         }
     }

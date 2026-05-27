@@ -26,14 +26,21 @@
 
     <bottom>
         <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="NEVER">
-            <HBox spacing="10" style="-fx-padding: 16; -fx-alignment: center;">
-                <Button text="Deposit / Withdraw / Transfer" onAction="#handleDeposit"        prefWidth="200"/>
-                <Button text="Transaction History"           onAction="#handleHistory"         prefWidth="160"/>
-                <Button text="Reports"                       onAction="#handleReports"         prefWidth="100"/>
-                <Button text="Manage Accounts"               onAction="#handleManageAccounts"  prefWidth="140"/>
-                <Button text="Change PIN"                    onAction="#handleChangePin"       prefWidth="110"/>
-                <Button text="Logout"                        onAction="#handleLogout"          prefWidth="90"/>
-            </HBox>
+            <VBox spacing="10" style="-fx-padding: 16;">
+                <HBox spacing="10" style="-fx-alignment: center;">
+                    <Button text="Deposit"              onAction="#handleDeposit"         prefWidth="130"/>
+                    <Button text="Withdraw"             onAction="#handleWithdraw"        prefWidth="130"/>
+                    <Button text="Transfer"             onAction="#handleTransfer"        prefWidth="130"/>
+                    <Button text="Savings"              onAction="#handleSavings"         prefWidth="130"/>
+                </HBox>
+                <HBox spacing="10" style="-fx-alignment: center;">
+                    <Button text="Transaction History"  onAction="#handleHistory"         prefWidth="160"/>
+                    <Button text="Reports"              onAction="#handleReports"         prefWidth="100"/>
+                    <Button text="Manage Accounts"      onAction="#handleManageAccounts"  prefWidth="140"/>
+                    <Button text="Change PIN"           onAction="#handleChangePin"       prefWidth="110"/>
+                    <Button text="Logout"               onAction="#handleLogout"          prefWidth="90"/>
+                </HBox>
+            </VBox>
         </ScrollPane>
     </bottom>
 </BorderPane>
