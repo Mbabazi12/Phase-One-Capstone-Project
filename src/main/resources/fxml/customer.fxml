@@ -9,7 +9,8 @@
 
     <VBox spacing="14" style="-fx-padding: 40;" minWidth="400">
 
-        <Label text="Customer Registration / Update" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+        <Label text="Customer Registration / Update"
+               style="-fx-font-size: 18; -fx-font-weight: bold;"/>
 
         <Label text="Full Name"/>
         <TextField fx:id="fullNameField" promptText="Full name" maxWidth="400"/>
@@ -17,10 +18,16 @@
         <Label text="Phone Number"/>
         <TextField fx:id="phoneField" promptText="10-digit phone number" maxWidth="400"/>
 
-        <Label text="PIN (5 digits)"/>
-        <TextField fx:id="pinField" promptText="5-digit PIN" maxWidth="400"/>
+        <!-- PIN fields — only shown during registration (hidden on update) -->
+        <VBox fx:id="pinSection" spacing="14">
+            <Label text="PIN (5 digits)"/>
+            <PasswordField fx:id="pinField" promptText="5-digit PIN" maxWidth="400"/>
 
-        <Label fx:id="messageLabel" style="-fx-text-fill: green;" text=""/>
+            <Label text="Confirm PIN"/>
+            <PasswordField fx:id="confirmPinField" promptText="Re-enter your PIN" maxWidth="400"/>
+        </VBox>
+
+        <Label fx:id="messageLabel" text="" wrapText="true"/>
 
         <HBox spacing="10">
             <Button text="Register"     onAction="#handleRegister" prefWidth="140"/>

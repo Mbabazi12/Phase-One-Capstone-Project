@@ -10,56 +10,73 @@ import com.igirepay.lab3.ui.SessionManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 public class CustomerController {
 
-    @FXML private TextField fullNameField;
-    @FXML private TextField phoneField;
-    @FXML private TextField pinField;
-    @FXML private Label messageLabel;
+    @FXML private TextField     fullNameField;
+    @FXML private TextField     phoneField;
+    @FXML private VBox          pinSection;
+    @FXML private PasswordField pinField;
+    @FXML private PasswordField confirmPinField;
+    @FXML private Label         messageLabel;
 
-    private final AuthService authService;
+    private final AuthService    authService;
     private final CustomerService customerService;
 
     public CustomerController() {
         this.customerService = new CustomerService();
-        this.authService = new AuthService(customerService);
+        this.authService     = new AuthService(customerService);
     }
 
     @FXML
     public void initialize() {
-        // If a customer is logged in, pre-fill fields for update
         Customer customer = SessionManager.getCurrentCustomer();
         if (customer != null) {
+            // Update mode — pre-fill name and phone, hide PIN section
             fullNameField.setText(customer.getFullName());
             phoneField.setText(customer.getPhoneNumber());
             phoneField.setDisable(true);
+            pinSection.setVisible(false);
+            pinSection.setManaged(false);
         }
     }
 
     @FXML
     private void handleRegister() {
         messageLabel.setText("");
-        String fullName = fullNameField.getText().trim();
-        String phone = phoneField.getText().trim();
-        String pin = pinField.getText().trim();
+        String fullName    = fullNameField.getText().trim();
+        String phone       = phoneField.getText().trim();
+        String pin         = pinField.getText().trim();
+        String confirmPin  = confirmPinField.getText().trim();
 
-        if (fullName.isEmpty() || phone.isEmpty() || pin.isEmpty()) {
-            messageLabel.setText("All fields are required.");
+        if (fullName.isEmpty() || phone.isEmpty() || pin.isEmpty() || confirmPin.isEmpty()) {
+            setError("All fields are required.");
+            return;
+        }
+
+        if (!pin.equals(confirmPin)) {
+            setError("PINs do not match. Please try again.");
+            pinField.clear();
+            confirmPinField.clear();
+            pinField.requestFocus();
             return;
         }
 
         try {
             authService.register(fullName, phone, pin);
+            messageLabel.setStyle("-fx-text-fill: green;");
             messageLabel.setText("Registration successful! You can now log in.");
             fullNameField.clear();
             phoneField.clear();
             pinField.clear();
+            confirmPinField.clear();
         } catch (IllegalArgumentException e) {
-            messageLabel.setText(e.getMessage());
+            setError(e.getMessage());
         } catch (InvalidPhoneNumberException e) {
-            messageLabel.setText("Phone number must be exactly 10 digits.");
+            setError("Phone number must be exactly 10 digits.");
         } catch (DatabaseException e) {
             showError("Database error. Please try again.");
         }
@@ -73,7 +90,7 @@ public class CustomerController {
 
         String fullName = fullNameField.getText().trim();
         if (fullName.isEmpty()) {
-            messageLabel.setText("Full name is required.");
+            setError("Full name is required.");
             return;
         }
 
@@ -81,6 +98,7 @@ public class CustomerController {
             customer.setFullName(fullName);
             customerService.update(customer);
             SessionManager.setCurrentCustomer(customerService.refresh(customer));
+            messageLabel.setStyle("-fx-text-fill: green;");
             messageLabel.setText("Profile updated successfully.");
         } catch (DatabaseException e) {
             showError("Database error. Please try again.");
@@ -94,6 +112,11 @@ public class CustomerController {
         } else {
             SceneManager.switchScene("/fxml/login.fxml");
         }
+    }
+
+    private void setError(String message) {
+        messageLabel.setStyle("-fx-text-fill: red;");
+        messageLabel.setText(message);
     }
 
     private void showError(String message) {

@@ -43,6 +43,7 @@ public class DashboardController {
     @FXML private void handleTransfer()     { SceneManager.switchScene("/fxml/transfer.fxml"); }
     @FXML private void handleSavings()      { SceneManager.switchScene("/fxml/savings.fxml"); }
     @FXML private void handleHistory()      { SceneManager.switchScene("/fxml/history.fxml"); }
+    @FXML private void handleReports()      { SceneManager.switchScene("/fxml/reports.fxml"); }
     @FXML private void handleChangePin()    { SceneManager.switchScene("/fxml/changePin.fxml"); }
     @FXML private void handleManageAccounts() { SceneManager.switchScene("/fxml/account.fxml"); }
 

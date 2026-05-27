@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.ReportController">
+
+    <top>
+        <VBox style="-fx-padding: 16 20 6 20;">
+            <Label text="Reports" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+            <Label text="Daily summary, full statement and CSV export"
+                   style="-fx-font-size: 12; -fx-text-fill: #666;"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
+            <VBox spacing="16" style="-fx-padding: 30;" minWidth="500">
+
+                <!-- Account selector -->
+                <HBox spacing="10" style="-fx-alignment: center-left;">
+                    <Label text="Account:" minWidth="100"/>
+                    <ComboBox fx:id="accountCombo" promptText="Select account" prefWidth="260"/>
+                </HBox>
+
+                <!-- Action buttons -->
+                <HBox spacing="10">
+                    <Button text="Today's Summary"  onAction="#handleDailySummary" prefWidth="150"/>
+                    <Button text="Full Statement"   onAction="#handleFullStatement" prefWidth="150"/>
+                    <Button text="Export to CSV"    onAction="#handleExportCSV"     prefWidth="150"/>
+                </HBox>
+
+                <!-- Daily summary output -->
+                <Label fx:id="summaryLabel" text="" wrapText="true"
+                       style="-fx-font-family: monospace; -fx-font-size: 12;
+                              -fx-background-color: #f4f4f4; -fx-padding: 10;
+                              -fx-border-color: #ddd; -fx-border-radius: 4;"/>
+
+                <!-- CSV export result -->
+                <Label fx:id="exportLabel" text="" wrapText="true"
+                       style="-fx-font-size: 11;"/>
+
+                <!-- Full statement table -->
+                <TableView fx:id="statementTable" prefHeight="300">
+                    <columns>
+                        <TableColumn fx:id="colDate"    text="Date"            prefWidth="150"/>
+                        <TableColumn fx:id="colType"    text="Type"            prefWidth="110"/>
+                        <TableColumn fx:id="colAmount"  text="Amount"          prefWidth="120"/>
+                        <TableColumn fx:id="colFee"     text="Fee"             prefWidth="100"/>
+                        <TableColumn fx:id="colBalance" text="Running Balance" prefWidth="130"/>
+                    </columns>
+                </TableView>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox style="-fx-padding: 12;">
+            <Button text="← Back to Dashboard" onAction="#handleBack" prefWidth="180"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
