@@ -14,7 +14,6 @@
     <center>
         <TabPane tabClosingPolicy="UNAVAILABLE">
 
-            <!-- ── DEPOSIT ── -->
             <Tab text="Deposit">
                 <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
                     <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">
@@ -37,7 +36,6 @@
                 </ScrollPane>
             </Tab>
 
-            <!-- ── WITHDRAW ── -->
             <Tab text="Withdraw">
                 <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
                     <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">
@@ -63,7 +61,6 @@
                 </ScrollPane>
             </Tab>
 
-            <!-- ── TRANSFER ── -->
             <Tab text="Transfer">
                 <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
                     <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">
@@ -101,7 +98,6 @@
                 </ScrollPane>
             </Tab>
 
-            <!-- ── SAVINGS MOVE ── -->
             <Tab text="Savings">
                 <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
                     <VBox spacing="14" style="-fx-padding: 30;" minWidth="400">

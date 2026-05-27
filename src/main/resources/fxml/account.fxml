@@ -13,7 +13,6 @@
         <Label text="Create new accounts or manage existing ones."
                style="-fx-font-size: 12; -fx-text-fill: #666;"/>
 
-        <!-- Create buttons -->
         <HBox spacing="10">
             <Button text="Create Wallet Account"  onAction="#handleCreateWallet"  prefWidth="190"/>
             <Button text="Create Savings Account" onAction="#handleCreateSavings" prefWidth="190"/>
@@ -23,7 +22,6 @@
                style="-fx-font-weight: bold;"/>
         <ListView fx:id="accountListView" prefHeight="220"/>
 
-        <!-- Deactivate / Reactivate side by side -->
         <HBox spacing="10">
             <Button text="Deactivate Selected"
                     onAction="#handleDeactivateSelected"

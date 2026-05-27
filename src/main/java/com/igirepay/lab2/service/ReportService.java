@@ -31,7 +31,6 @@ public class ReportService {
         this.transactionDAO = new TransactionDAO();
     }
 
-    /** Export all transactions for an account within a date range to a CSV file. */
     public String exportToCSV(int accountId, LocalDate from, LocalDate to) {
         List<Transaction> transactions = transactionDAO.findByDateRange(accountId, from, to);
         Path dir = Path.of("reports");
@@ -53,7 +52,6 @@ public class ReportService {
         }
     }
 
-    /** Print a daily summary of transactions for an account to stdout. */
     public void printDailySummary(int accountId, LocalDate date) {
         LocalDate target = date == null ? LocalDate.now() : date;
         List<Transaction> transactions = transactionDAO.findByDateRange(accountId, target, target);
@@ -74,11 +72,9 @@ public class ReportService {
         System.out.println("  Net change:    " + fmt(net));
     }
 
-    /** Return all transactions for a customer's accounts with a running balance. */
     public List<Transaction> getFullStatement(int customerId) {
         List<Account> accounts = accountDAO.findByCustomerId(customerId);
         if (accounts.isEmpty()) throw new AccountNotFoundException(String.valueOf(customerId));
-        // Return transactions for all accounts combined
         return accounts.stream()
                 .flatMap(a -> transactionDAO.findByAccountId(a.getAccountId()).stream())
                 .toList();

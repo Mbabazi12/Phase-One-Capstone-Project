@@ -28,18 +28,15 @@ import javafx.scene.control.TextField;
 
 public class TransactionController {
 
-    // Deposit tab
     @FXML private ComboBox<String> depositAccountCombo;
     @FXML private TextField depositAmountField;
     @FXML private Label depositResultLabel;
 
-    // Withdraw tab
     @FXML private ComboBox<String> withdrawAccountCombo;
     @FXML private TextField withdrawAmountField;
     @FXML private PasswordField withdrawPinField;
     @FXML private Label withdrawResultLabel;
 
-    // Transfer tab
     @FXML private ComboBox<String> transferAccountCombo;
     @FXML private TextField transferRecipientPhoneField;
     @FXML private Label transferRecipientNameLabel;
@@ -48,7 +45,6 @@ public class TransactionController {
     @FXML private PasswordField transferPinField;
     @FXML private Label transferResultLabel;
 
-    // Savings move tab
     @FXML private ComboBox<String> savingsDirectionCombo;
     @FXML private TextField savingsAmountField;
     @FXML private PasswordField savingsPinField;
@@ -85,7 +81,6 @@ public class TransactionController {
         }
     }
 
-    // ── Deposit ──────────────────────────────────────────────────────────────
 
     @FXML
     private void handleDeposit() {
@@ -107,7 +102,6 @@ public class TransactionController {
         }
     }
 
-    // ── Withdraw ─────────────────────────────────────────────────────────────
 
     @FXML
     private void handleWithdraw() {
@@ -140,8 +134,6 @@ public class TransactionController {
             showError("A database error occurred. Please try again.");
         }
     }
-
-    // ── Transfer ─────────────────────────────────────────────────────────────
 
     @FXML
     private void handleLookupRecipient() {
@@ -202,7 +194,6 @@ public class TransactionController {
 
         String pin = transferPinField.getText().trim();
 
-        // Find the wallet account from the combo selection
         List<Account> walletAccounts = accounts.stream()
                 .filter(a -> a.getAccountType() == AccountType.WALLET).toList();
         if (index >= walletAccounts.size()) { transferResultLabel.setText("Invalid account selection."); return; }
@@ -234,7 +225,6 @@ public class TransactionController {
         }
     }
 
-    // ── Savings Move ─────────────────────────────────────────────────────────
 
     @FXML
     private void handleSavingsMove() {
@@ -257,12 +247,10 @@ public class TransactionController {
 
         try {
             if (dirIndex == 0) {
-                // Wallet → Savings
                 transactionService.moveToSavings(walletOpt.get(), savingsOpt.get(), amount, pin, UUID.randomUUID().toString());
                 savingsResultLabel.setStyle("-fx-text-fill: green;");
                 savingsResultLabel.setText("Moved to savings successfully.");
             } else {
-                // Savings → Wallet
                 transactionService.moveToWallet(savingsOpt.get(), walletOpt.get(), amount, pin, UUID.randomUUID().toString());
                 savingsResultLabel.setStyle("-fx-text-fill: green;");
                 savingsResultLabel.setText("Moved to wallet successfully.");

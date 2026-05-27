@@ -25,7 +25,6 @@ public class AuthService {
         if (customerDAO.findByPhone(normalizedPhone).isPresent()) {
             throw new IllegalArgumentException("A customer already exists with phone number " + normalizedPhone + ".");
         }
-        // customerId = 0; DB will assign the real SERIAL id via RETURN_GENERATED_KEYS
         Customer customer = new Customer(0, fullName, normalizedPhone, pin, LocalDateTime.now());
         customerDAO.create(customer);
         return customerService.refresh(customer);

@@ -86,13 +86,11 @@ public class SavingsController {
 
         try {
             if (dirIndex == 0) {
-                // Wallet → Savings
                 transactionService.moveToSavings(walletOpt.get(), savingsOpt.get(), amount, pin,
                         UUID.randomUUID().toString());
                 resultLabel.setStyle("-fx-text-fill: green;");
                 resultLabel.setText("Moved to savings successfully.");
             } else {
-                // Savings → Wallet
                 transactionService.moveToWallet(savingsOpt.get(), walletOpt.get(), amount, pin,
                         UUID.randomUUID().toString());
                 resultLabel.setStyle("-fx-text-fill: green;");

@@ -7,7 +7,7 @@ public class Transaction {
     private int transactionId;
     private String referenceId;
     private int accountId;
-    private int targetAccountId;   // 0 means no target (e.g. deposit, fee)
+    private int targetAccountId;
     private TransactionType transactionType;
     private BigDecimal amount;
     private BigDecimal fee;
@@ -20,7 +20,6 @@ public class Transaction {
                 BigDecimal.ZERO, TransactionStatus.SUCCESS, LocalDateTime.now(), "");
     }
 
-    /** Convenience constructor used by TransactionService (no fee, SUCCESS status). */
     public Transaction(String referenceId, int accountId, int targetAccountId,
                        TransactionType transactionType, BigDecimal amount, String description) {
         this(0, referenceId, accountId, targetAccountId, transactionType, amount,

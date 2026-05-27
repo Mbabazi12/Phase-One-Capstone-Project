@@ -35,7 +35,6 @@ public class CustomerController {
     public void initialize() {
         Customer customer = SessionManager.getCurrentCustomer();
         if (customer != null) {
-            // Update mode — pre-fill name and phone, hide PIN section
             fullNameField.setText(customer.getFullName());
             phoneField.setText(customer.getPhoneNumber());
             phoneField.setDisable(true);

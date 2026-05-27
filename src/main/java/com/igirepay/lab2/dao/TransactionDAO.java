@@ -29,7 +29,6 @@ public class TransactionDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, transaction.getReferenceId());
             statement.setInt(2, transaction.getAccountId());
-            // target_account_id = 0 means no target — store as NULL
             if (transaction.getTargetAccountId() == 0) {
                 statement.setNull(3, java.sql.Types.INTEGER);
             } else {
@@ -122,7 +121,6 @@ public class TransactionDAO {
 
     private Transaction mapTransaction(ResultSet resultSet) throws SQLException {
         int targetId = resultSet.getInt("target_account_id");
-        // getInt returns 0 when the column is NULL — wasNull() confirms it
         if (resultSet.wasNull()) targetId = 0;
 
         return new Transaction(

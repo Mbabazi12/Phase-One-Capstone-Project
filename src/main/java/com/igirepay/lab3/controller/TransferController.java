@@ -54,9 +54,6 @@ public class TransferController {
         }
     }
 
-    /**
-     * Look up recipient by phone number and display their name before the transfer.
-     */
     @FXML
     private void handleLookupRecipient() {
         recipientNameLabel.setText("");
@@ -102,7 +99,6 @@ public class TransferController {
             return;
         }
 
-        // Require name lookup before transfer
         if (recipientNameLabel.getText().isEmpty() || recipientNameLabel.getText().startsWith("No customer")) {
             setError("Please look up the recipient first to confirm their name.");
             return;

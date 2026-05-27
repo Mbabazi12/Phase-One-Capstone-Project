@@ -68,12 +68,10 @@ public class ReportController {
         colFee.setCellValueFactory(d ->
                 new SimpleStringProperty(d.getValue().getFee()
                         .setScale(2, RoundingMode.HALF_UP).toPlainString() + " RWF"));
-        // Running balance stored in description after full statement is loaded
         colBalance.setCellValueFactory(d ->
                 new SimpleStringProperty(d.getValue().getDescription()));
     }
 
-    /** Show today's deposit/withdrawal/transfer/fee totals for the selected account. */
     @FXML
     private void handleDailySummary() {
         summaryLabel.setText("");
@@ -102,7 +100,6 @@ public class ReportController {
         }
     }
 
-    /** Export all transactions for the selected account to a CSV file. */
     @FXML
     private void handleExportCSV() {
         exportLabel.setText("");
@@ -119,7 +116,6 @@ public class ReportController {
         }
     }
 
-    /** Load the full transaction history with a running balance for the selected account. */
     @FXML
     private void handleFullStatement() {
         int index = accountCombo.getSelectionModel().getSelectedIndex();
@@ -129,7 +125,6 @@ public class ReportController {
             List<Transaction> txs = transactionDAO.findByAccountId(
                     accounts.get(index).getAccountId());
 
-            // Compute running balance and store in description for the colBalance column
             BigDecimal running = BigDecimal.ZERO;
             for (Transaction tx : txs) {
                 switch (tx.getTransactionType()) {

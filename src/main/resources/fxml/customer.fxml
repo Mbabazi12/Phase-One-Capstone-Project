@@ -18,7 +18,6 @@
         <Label text="Phone Number"/>
         <TextField fx:id="phoneField" promptText="10-digit phone number" maxWidth="400"/>
 
-        <!-- PIN fields — only shown during registration (hidden on update) -->
         <VBox fx:id="pinSection" spacing="14">
             <Label text="PIN (5 digits)"/>
             <PasswordField fx:id="pinField" promptText="5-digit PIN" maxWidth="400"/>

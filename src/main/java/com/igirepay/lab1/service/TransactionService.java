@@ -81,7 +81,6 @@ public class TransactionService {
         }
     }
 
-    /** Transfer between wallet accounts of different customers. Savings cannot transfer externally. */
     public List<Transaction> transfer(Account sender, String recipientPhone, BigDecimal amount, String pin,
                                       String referenceId, CustomerService customerService) {
         if (sender.getAccountType() == AccountType.SAVINGS) {
@@ -144,7 +143,6 @@ public class TransactionService {
         }
     }
 
-    /** Move money from wallet to own savings account (no fee). */
     public Transaction moveToSavings(Account walletAccount, Account savingsAccount,
                                      BigDecimal amount, String pin, String referenceId) {
         if (walletAccount.getAccountType() != AccountType.WALLET)
@@ -189,7 +187,6 @@ public class TransactionService {
         }
     }
 
-    /** Move money from savings back to own wallet account (no fee). */
     public Transaction moveToWallet(Account savingsAccount, Account walletAccount,
                                     BigDecimal amount, String pin, String referenceId) {
         if (savingsAccount.getAccountType() != AccountType.SAVINGS)
@@ -259,7 +256,6 @@ public class TransactionService {
         return Collections.unmodifiableList(transactionDAO.findDailyWithdrawals(accountId, date));
     }
 
-    // ── private helpers ──────────────────────────────────────────────────────
 
     private String requireReference(String referenceId) {
         String normalized = referenceId == null ? "" : referenceId.trim();

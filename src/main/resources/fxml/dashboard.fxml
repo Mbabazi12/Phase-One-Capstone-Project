@@ -5,7 +5,6 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.igirepay.lab3.controller.DashboardController">
 
-    <!-- ── Top header ── -->
     <top>
         <VBox style="-fx-padding: 16 20 10 20; -fx-spacing: 4;
                      -fx-background-color: #2c3e50;">
@@ -16,7 +15,6 @@
         </VBox>
     </top>
 
-    <!-- ── Left sidebar ── -->
     <left>
         <VBox spacing="6"
               style="-fx-padding: 20 12 20 12; -fx-background-color: #34495e;
@@ -70,7 +68,6 @@
                     style="-fx-background-color: #3d566e; -fx-text-fill: white;
                            -fx-alignment: center-left; -fx-padding: 8 12;"/>
 
-            <!-- Spacer pushes Logout to the bottom -->
             <Region VBox.vgrow="ALWAYS"/>
 
             <Button text="Logout"
@@ -81,7 +78,6 @@
         </VBox>
     </left>
 
-    <!-- ── Center: accounts table ── -->
     <center>
         <ScrollPane fitToWidth="true" fitToHeight="true" style="-fx-padding: 0;">
             <TableView fx:id="accountsTable" VBox.vgrow="ALWAYS">
