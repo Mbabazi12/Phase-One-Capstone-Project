@@ -1,5 +1,7 @@
 package com.igirepay.lab1.model;
 
+import com.igirepay.lab1.exceptions.InsufficientBalanceException;
+import com.igirepay.lab1.exceptions.InvalidAmountException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

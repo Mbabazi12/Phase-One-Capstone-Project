@@ -1,50 +1,52 @@
 package com.igirepay;
 
+import com.igirepay.lab1.exceptions.AccountLockedException;
+import com.igirepay.lab1.exceptions.AccountNotFoundException;
+import com.igirepay.lab1.exceptions.DatabaseException;
+import com.igirepay.lab1.exceptions.DuplicateTransactionException;
+import com.igirepay.lab1.exceptions.InsufficientBalanceException;
+import com.igirepay.lab1.exceptions.InvalidAmountException;
+import com.igirepay.lab1.exceptions.InvalidPhoneNumberException;
+import com.igirepay.lab1.exceptions.InvalidPinException;
+import com.igirepay.lab1.exceptions.InvalidPinFormatException;
 import com.igirepay.lab1.model.Account;
-import com.igirepay.lab1.model.AccountLockedException;
-import com.igirepay.lab1.model.AccountNotFoundException;
 import com.igirepay.lab1.model.AccountType;
 import com.igirepay.lab1.model.Customer;
-import com.igirepay.lab1.model.DuplicateTransactionException;
-import com.igirepay.lab1.model.InsufficientBalanceException;
-import com.igirepay.lab1.model.InvalidAmountException;
-import com.igirepay.lab1.model.InvalidPhoneNumberException;
-import com.igirepay.lab1.model.InvalidPinException;
-import com.igirepay.lab1.model.InvalidPinFormatException;
 import com.igirepay.lab1.model.Transaction;
 import com.igirepay.lab1.service.AccountService;
 import com.igirepay.lab1.service.AuthService;
 import com.igirepay.lab1.service.CustomerService;
 import com.igirepay.lab1.service.TransactionService;
+import com.igirepay.lab2.service.ReportService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
 
 public class Main {
-    private static final CustomerService CUSTOMER_SERVICE = new CustomerService();
-    private static final AuthService AUTH_SERVICE = new AuthService(CUSTOMER_SERVICE);
-    private static final AccountService ACCOUNT_SERVICE = new AccountService();
-    private static final TransactionService TRANSACTION_SERVICE = new TransactionService();
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.00");
-    private static final DateTimeFormatter HISTORY_TIME_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static final CustomerService customerService = new CustomerService();
+    private static final AuthService authService = new AuthService(customerService);
+    private static final AccountService accountService = new AccountService();
+    private static final TransactionService transactionService = new TransactionService();
+    private static final ReportService reportService = new ReportService();
 
     public static void main(String[] args) {
         try (Scanner scanner = new Scanner(System.in)) {
             Customer currentCustomer = null;
             boolean running = true;
-
             while (running) {
                 try {
                     if (currentCustomer == null) {
                         currentCustomer = handleAuthMenu(scanner);
-                        if (currentCustomer == null && readLastChoiceWasExit()) {
+                        if (currentCustomer == null) {
                             running = false;
                         }
                     } else {
@@ -59,13 +61,10 @@ public class Main {
         }
     }
 
-    private static boolean lastChoiceWasExit;
-
     private static Customer handleAuthMenu(Scanner scanner) {
-        lastChoiceWasExit = false;
         System.out.println();
-        System.out.println("--- IgirePay Payment Gateway (Lab 1) ---");
-        System.out.println("1. Register as a new user");
+        System.out.println(" IgirePay Payment Gateway ");
+        System.out.println("1. Register");
         System.out.println("2. Login");
         System.out.println("0. Exit");
 
@@ -74,19 +73,14 @@ public class Main {
             case 1 -> register(scanner);
             case 2 -> login(scanner);
             case 0 -> {
-                lastChoiceWasExit = true;
                 System.out.println("Goodbye!");
                 yield null;
             }
             default -> {
                 System.out.println("Invalid option, please try again.");
-                yield null;
+                yield handleAuthMenu(scanner);
             }
         };
-    }
-
-    private static boolean readLastChoiceWasExit() {
-        return lastChoiceWasExit;
     }
 
     private static MenuResult handleCustomerMenu(Scanner scanner, Customer customer) {
@@ -95,13 +89,31 @@ public class Main {
 
         switch (choice) {
             case 1 -> checkBalance(scanner, customer);
-            case 2 -> depositMoney(scanner, customer);
-            case 3 -> withdrawMoney(scanner, customer);
-            case 4 -> transferMoney(scanner, customer);
+            case 2 -> {
+                depositMoney(scanner, customer);
+                customer = customerService.refresh(customer);
+            }
+            case 3 -> {
+                withdrawMoney(scanner, customer);
+                customer = customerService.refresh(customer);
+            }
+            case 4 -> {
+                transferMoney(scanner, customer);
+                customer = customerService.refresh(customer);
+            }
             case 5 -> viewTransactionHistory(scanner, customer);
-            case 6 -> createAccount(scanner, customer);
-            case 7 -> changePin(scanner, customer);
-            case 8 -> {
+            case 6 -> {
+                createAccount(scanner, customer);
+                customer = customerService.refresh(customer);
+            }
+            case 7 -> {
+                changePin(scanner, customer);
+                customer = customerService.refresh(customer);
+            }
+            case 8 -> exportTransactionHistory(scanner, customer);
+            case 9 -> viewDailySummary(scanner, customer);
+            case 10 -> reportService.printFullStatement(customer.getCustomerId());
+            case 11 -> {
                 System.out.println("Logged out.");
                 return new MenuResult(null, false);
             }
@@ -116,15 +128,18 @@ public class Main {
 
     private static void printCustomerMenu(Customer customer) {
         System.out.println();
-        System.out.println("--- Welcome, " + customer.getFullName() + " ---");
+        System.out.println(" Welcome, " + customer.getFullName());
         System.out.println("1. Check balance");
         System.out.println("2. Deposit money");
         System.out.println("3. Withdraw money");
         System.out.println("4. Transfer money");
         System.out.println("5. View transaction history");
-        System.out.println("6. Create savings account / wallet account");
+        System.out.println("6. Create savings / wallet account");
         System.out.println("7. Change PIN");
-        System.out.println("8. Logout");
+        System.out.println("8. Export transaction history to CSV");
+        System.out.println("9. View daily summary");
+        System.out.println("10. View full account statement");
+        System.out.println("11. Logout");
         System.out.println("0. Exit");
     }
 
@@ -142,7 +157,7 @@ public class Main {
             throw new InvalidPinFormatException("PIN confirmation does not match.");
         }
 
-        Customer customer = AUTH_SERVICE.register(fullName, phone, pin);
+        Customer customer = authService.register(fullName, phone, pin);
         System.out.println("Registration successful. You are now logged in.");
         return customer;
     }
@@ -153,7 +168,7 @@ public class Main {
         System.out.print("PIN: ");
         String pin = scanner.nextLine();
 
-        Customer customer = AUTH_SERVICE.login(phone, pin);
+        Customer customer = authService.login(phone, pin);
         System.out.println("Login successful.");
         return customer;
     }
@@ -161,20 +176,18 @@ public class Main {
     private static void checkBalance(Scanner scanner, Customer customer) {
         Account account = selectAccount(scanner, customer);
         if (account != null) {
-            System.out.println(account.getAccountType() + " balance: " + formatMoney(
-                    ACCOUNT_SERVICE.getBalance(account.getAccountId(), customer)));
+            System.out.println(account.getAccountType() + " balance: " +
+                    formatMoney(accountService.getBalance(account.getAccountId(), customer)));
         }
     }
 
     private static void depositMoney(Scanner scanner, Customer customer) {
         Account account = selectAccount(scanner, customer);
-        if (account == null) {
-            return;
-        }
+        if (account == null) return;
 
         BigDecimal amount = readAmount(scanner);
-        String referenceId = newReferenceId();
-        TRANSACTION_SERVICE.deposit(account, amount, referenceId);
+        String referenceId = UUID.randomUUID().toString();
+        transactionService.deposit(account, amount, referenceId);
 
         System.out.println("Deposit successful. Reference ID: " + referenceId);
         System.out.println("New balance: " + formatMoney(account.getBalance()));
@@ -182,15 +195,13 @@ public class Main {
 
     private static void withdrawMoney(Scanner scanner, Customer customer) {
         Account account = selectAccount(scanner, customer);
-        if (account == null) {
-            return;
-        }
+        if (account == null) return;
 
         BigDecimal amount = readAmount(scanner);
         System.out.print("Confirm with PIN: ");
         String pin = scanner.nextLine();
-        String referenceId = newReferenceId();
-        TRANSACTION_SERVICE.withdraw(account, amount, pin, referenceId);
+        String referenceId = UUID.randomUUID().toString();
+        transactionService.withdraw(account, amount, pin, referenceId);
 
         System.out.println("Withdrawal successful. Reference ID: " + referenceId);
         System.out.println("New balance: " + formatMoney(account.getBalance()));
@@ -198,32 +209,23 @@ public class Main {
 
     private static void transferMoney(Scanner scanner, Customer customer) {
         Account sender = selectAccount(scanner, customer);
-        if (sender == null) {
-            return;
-        }
+        if (sender == null) return;
 
         BigDecimal amount = readAmount(scanner);
         System.out.print("Recipient phone number: ");
         String recipientPhone = scanner.nextLine();
-        String recipientName = TRANSACTION_SERVICE.lookupRecipientName(recipientPhone, CUSTOMER_SERVICE);
+        String recipientName = transactionService.lookupRecipientName(recipientPhone, customerService);
         System.out.println("Sending to: " + recipientName + " - confirm with your PIN");
         System.out.print("PIN: ");
         String pin = scanner.nextLine();
 
-        TRANSACTION_SERVICE.validateAccountPin(sender, pin);
-        BigDecimal fee = TRANSACTION_SERVICE.previewTransferFee(sender, recipientPhone, amount, CUSTOMER_SERVICE);
-        BigDecimal totalDeducted = amount.add(fee);
-        System.out.println("Fee: " + formatMoney(fee) + ". Total deducted: " + formatMoney(totalDeducted));
+        transactionService.validateAccountPin(sender, pin);
+        BigDecimal fee = transactionService.previewTransferFee(sender, recipientPhone, amount, customerService);
+        System.out.println("Fee: " + formatMoney(fee) + ". Total deducted: " + formatMoney(amount.add(fee)));
 
-        String referenceId = newReferenceId();
-        List<Transaction> transactions = TRANSACTION_SERVICE.transfer(
-                sender,
-                recipientPhone,
-                amount,
-                pin,
-                referenceId,
-                CUSTOMER_SERVICE
-        );
+        String referenceId = UUID.randomUUID().toString();
+        List<Transaction> transactions = transactionService.transfer(sender, recipientPhone, amount, pin,
+                referenceId, customerService);
 
         System.out.println("Transfer successful. Reference ID: " + referenceId);
         System.out.println("Transactions created: " + transactions.size());
@@ -232,11 +234,9 @@ public class Main {
 
     private static void viewTransactionHistory(Scanner scanner, Customer customer) {
         Account account = selectAccount(scanner, customer);
-        if (account == null) {
-            return;
-        }
+        if (account == null) return;
 
-        List<Transaction> history = TRANSACTION_SERVICE.getHistory(account.getAccountId());
+        List<Transaction> history = transactionService.getHistory(account.getAccountId());
         if (history.isEmpty()) {
             System.out.println("No transactions found for this account.");
             return;
@@ -255,11 +255,11 @@ public class Main {
 
         switch (choice) {
             case 1 -> {
-                ACCOUNT_SERVICE.createWallet(customer);
+                accountService.createWallet(customer);
                 System.out.println("Wallet account created.");
             }
             case 2 -> {
-                ACCOUNT_SERVICE.createSavings(customer);
+                accountService.createSavings(customer);
                 System.out.println("Savings account created.");
             }
             default -> System.out.println("Invalid option, please try again.");
@@ -284,7 +284,28 @@ public class Main {
         AuthService.validatePinFormat(newPin);
         customer.setHashedPin(AuthService.hashPin(newPin));
         customer.resetFailedAttempts();
+        customerService.update(customer);
         System.out.println("PIN changed successfully.");
+    }
+
+    private static void exportTransactionHistory(Scanner scanner, Customer customer) {
+        Account account = selectAccount(scanner, customer);
+        if (account == null) return;
+
+        LocalDate from = readDate(scanner, "From date (yyyy-MM-dd): ");
+        LocalDate to = readDate(scanner, "To date (yyyy-MM-dd): ");
+        System.out.print("CSV file path: ");
+        String filePath = scanner.nextLine().trim();
+        reportService.exportToCSV(account.getAccountId(), from, to, filePath);
+        System.out.println("Transaction history exported to " + filePath + ".");
+    }
+
+    private static void viewDailySummary(Scanner scanner, Customer customer) {
+        Account account = selectAccount(scanner, customer);
+        if (account == null) return;
+
+        LocalDate date = readDate(scanner, "Summary date (yyyy-MM-dd): ");
+        reportService.printDailySummary(account.getAccountId(), date);
     }
 
     private static Account selectAccount(Scanner scanner, Customer customer) {
@@ -297,16 +318,12 @@ public class Main {
         }
 
         System.out.println("Select account:");
-        wallet.ifPresent(account -> System.out.println("1. Wallet - " + formatMoney(account.getBalance())));
-        savings.ifPresent(account -> System.out.println("2. Savings - " + formatMoney(account.getBalance())));
+        wallet.ifPresent(a -> System.out.println("1. Wallet - " + formatMoney(a.getBalance())));
+        savings.ifPresent(a -> System.out.println("2. Savings - " + formatMoney(a.getBalance())));
         int choice = readMenuChoice(scanner, "Choose account: ");
 
-        if (choice == 1 && wallet.isPresent()) {
-            return wallet.get();
-        }
-        if (choice == 2 && savings.isPresent()) {
-            return savings.get();
-        }
+        if (choice == 1 && wallet.isPresent()) return wallet.get();
+        if (choice == 2 && savings.isPresent()) return savings.get();
 
         System.out.println("Selected account does not exist.");
         return null;
@@ -336,24 +353,31 @@ public class Main {
         }
     }
 
+    private static LocalDate readDate(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
+            try {
+                return LocalDate.parse(input);
+            } catch (DateTimeParseException exception) {
+                System.out.println("Invalid date, please use yyyy-MM-dd.");
+            }
+        }
+    }
+
     private static String formatMoney(BigDecimal amount) {
-        BigDecimal safeAmount = amount == null ? BigDecimal.ZERO : amount;
-        return MONEY_FORMAT.format(safeAmount.setScale(2, RoundingMode.HALF_UP)) + " RWF";
+        BigDecimal safe = amount == null ? BigDecimal.ZERO : amount;
+        return MONEY_FORMAT.format(safe.setScale(2, RoundingMode.HALF_UP)) + " RWF";
     }
 
     private static String formatTransaction(Transaction transaction) {
         String fee = transaction.getFee().compareTo(BigDecimal.ZERO) > 0
                 ? ", fee " + formatMoney(transaction.getFee())
                 : "";
-        return transaction.getTimestamp().format(HISTORY_TIME_FORMAT) + " | " +
+        return transaction.getTimestamp().toString() + " | " +
                 transaction.getTransactionType() + " | " +
                 formatMoney(transaction.getAmount()) + fee + " | " +
-                transaction.getStatus() + " | Ref: " +
-                transaction.getReferenceId();
-    }
-
-    private static String newReferenceId() {
-        return UUID.randomUUID().toString();
+                transaction.getStatus() + " | Ref: " + transaction.getReferenceId();
     }
 
     private static String toUserMessage(RuntimeException exception) {
@@ -381,6 +405,10 @@ public class Main {
         }
         if (exception instanceof InvalidAmountException amountException) {
             return amountException.getMessage();
+        }
+        if (exception instanceof DatabaseException databaseException) {
+            String cause = databaseException.getCause() != null ? " (" + databaseException.getCause().getMessage() + ")" : "";
+            return "Database error: " + databaseException.getMessage() + cause + ".";
         }
         return exception.getMessage() == null ? "Something went wrong. Please try again." : exception.getMessage();
     }

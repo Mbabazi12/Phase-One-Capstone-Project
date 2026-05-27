@@ -1,15 +1,11 @@
 module com.igirepay {
-    requires javafx.controls;
-    requires javafx.fxml;
-    requires javafx.web;
-    requires org.controlsfx.controls;
-    requires com.dlsc.formsfx;
-    requires net.synedra.validatorfx;
-    requires org.kordamp.ikonli.javafx;
-    requires org.kordamp.bootstrapfx.core;
-    requires eu.hansolo.tilesfx;
-    requires com.almasb.fxgl.all;
+    requires java.sql;
+    requires org.postgresql.jdbc;
     exports com.igirepay.lab1.model;
+    exports com.igirepay.lab1.exceptions;
     exports com.igirepay.lab1.service;
+    exports com.igirepay.lab2.config;
+    exports com.igirepay.lab2.dao;
+    exports com.igirepay.lab2.service;
     exports com.igirepay;
 }

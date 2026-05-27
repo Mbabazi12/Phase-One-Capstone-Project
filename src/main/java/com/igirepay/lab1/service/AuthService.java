@@ -1,32 +1,31 @@
 package com.igirepay.lab1.service;
 
-import com.igirepay.lab1.model.AccountLockedException;
-import com.igirepay.lab1.model.AccountNotFoundException;
+import com.igirepay.lab1.exceptions.AccountLockedException;
+import com.igirepay.lab1.exceptions.AccountNotFoundException;
+import com.igirepay.lab1.exceptions.InvalidPhoneNumberException;
+import com.igirepay.lab1.exceptions.InvalidPinException;
+import com.igirepay.lab1.exceptions.InvalidPinFormatException;
 import com.igirepay.lab1.model.Customer;
-import com.igirepay.lab1.model.InvalidPhoneNumberException;
-import com.igirepay.lab1.model.InvalidPinException;
-import com.igirepay.lab1.model.InvalidPinFormatException;
+import com.igirepay.lab2.dao.CustomerDAO;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.UUID;
 
 public class AuthService {
     public static final int MAX_FAILED_PIN_ATTEMPTS = 3;
 
+    private final CustomerDAO customerDAO;
     private final CustomerService customerService;
 
     public AuthService(CustomerService customerService) {
         this.customerService = customerService == null ? new CustomerService() : customerService;
+        this.customerDAO = new CustomerDAO();
     }
 
     public Customer register(String fullName, String phone, String pin) {
         String normalizedPhone = validatePhone(phone);
         validatePinFormat(pin);
-        if (customerService.findByPhone(normalizedPhone).isPresent()) {
+        if (customerDAO.findByPhone(normalizedPhone).isPresent()) {
             throw new IllegalArgumentException("A customer already exists with phone number " + normalizedPhone + ".");
         }
 
@@ -34,15 +33,16 @@ public class AuthService {
                 UUID.randomUUID(),
                 fullName,
                 normalizedPhone,
-                hashPin(pin),
+                pin,
                 LocalDateTime.now()
         );
-        return customerService.save(customer);
+        customerDAO.create(customer);
+        return customerService.refresh(customer);
     }
 
     public Customer login(String phone, String pin) {
         String normalizedPhone = validatePhone(phone);
-        Customer customer = customerService.findByPhone(normalizedPhone)
+        Customer customer = customerDAO.findByPhone(normalizedPhone)
                 .orElseThrow(() -> new AccountNotFoundException(normalizedPhone));
 
         if (customer.isLocked()) {
@@ -51,17 +51,22 @@ public class AuthService {
 
         validatePinFormat(pin);
         if (!customer.validatePin(pin)) {
-            customer.recordFailedPinAttempt();
-            int attemptsRemaining = MAX_FAILED_PIN_ATTEMPTS - customer.getFailedPinAttempts();
+            int failedAttempts = customer.getFailedPinAttempts() + 1;
+            customerDAO.incrementFailedAttempts(customer.getCustomerId());
+            customer.setFailedPinAttempts(failedAttempts);
+
+            int attemptsRemaining = MAX_FAILED_PIN_ATTEMPTS - failedAttempts;
             if (attemptsRemaining <= 0) {
+                customerDAO.lockAccount(customer.getCustomerId());
                 customer.lockAccount();
                 throw new AccountLockedException(normalizedPhone);
             }
             throw new InvalidPinException(attemptsRemaining);
         }
 
+        customerDAO.resetFailedAttempts(customer.getCustomerId());
         customer.resetFailedAttempts();
-        return customer;
+        return customerService.refresh(customer);
     }
 
     public static String validatePhone(String phone) {
@@ -80,12 +85,6 @@ public class AuthService {
     }
 
     public static String hashPin(String pin) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((pin == null ? "" : pin).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 hashing is unavailable.", exception);
-        }
+        return pin == null ? "" : pin.trim();
     }
 }

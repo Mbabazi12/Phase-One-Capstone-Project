@@ -1,150 +1,147 @@
 package com.igirepay.lab1.service;
 
+import com.igirepay.lab1.exceptions.AccountNotFoundException;
+import com.igirepay.lab1.exceptions.DatabaseException;
+import com.igirepay.lab1.exceptions.DuplicateTransactionException;
+import com.igirepay.lab1.exceptions.InsufficientBalanceException;
+import com.igirepay.lab1.exceptions.InvalidAmountException;
+import com.igirepay.lab1.exceptions.InvalidPinException;
+import com.igirepay.lab1.exceptions.WithdrawalLimitExceededException;
 import com.igirepay.lab1.model.Account;
-import com.igirepay.lab1.model.AccountNotFoundException;
 import com.igirepay.lab1.model.AccountType;
 import com.igirepay.lab1.model.Customer;
-import com.igirepay.lab1.model.DuplicateTransactionException;
-import com.igirepay.lab1.model.InsufficientBalanceException;
-import com.igirepay.lab1.model.InvalidAmountException;
-import com.igirepay.lab1.model.InvalidPinException;
 import com.igirepay.lab1.model.SavingsAccount;
 import com.igirepay.lab1.model.Transaction;
-import com.igirepay.lab1.model.TransactionStatus;
 import com.igirepay.lab1.model.TransactionType;
 import com.igirepay.lab1.model.WalletAccount;
-import com.igirepay.lab1.model.WithdrawalLimitExceededException;
+import com.igirepay.lab2.config.DBConnection;
+import com.igirepay.lab2.dao.AccountDAO;
+import com.igirepay.lab2.dao.ProcessedRequestDAO;
+import com.igirepay.lab2.dao.TransactionDAO;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public class TransactionService {
-    private final Set<String> processedReferenceIds;
-    private final List<Transaction> globalFailedLog;
-    private final Map<UUID, List<Transaction>> historyByAccountId;
+    private final AccountDAO accountDAO;
+    private final TransactionDAO transactionDAO;
+    private final ProcessedRequestDAO processedRequestDAO;
 
     public TransactionService() {
-        this.processedReferenceIds = new HashSet<>();
-        this.globalFailedLog = new ArrayList<>();
-        this.historyByAccountId = new HashMap<>();
+        this.accountDAO = new AccountDAO();
+        this.transactionDAO = new TransactionDAO();
+        this.processedRequestDAO = new ProcessedRequestDAO();
     }
 
     public Transaction deposit(Account account, BigDecimal amount, String referenceId) {
-        String normalizedReferenceId = requireNewReference(referenceId, account, null, TransactionType.DEPOSIT, amount);
-        requireAccount(account);
-        BigDecimal normalizedAmount = requirePositiveAmount(amount);
-
+        Connection connection = beginTransaction();
         try {
-            Transaction transaction = account.deposit(normalizedAmount, normalizedReferenceId);
-            markProcessed(normalizedReferenceId);
-            logSuccess(transaction);
+            String ref = requireNewReference(referenceId);
+            requireNotProcessed(ref);
+            Account working = loadAccount(account);
+            BigDecimal normalizedAmount = requirePositiveAmount(amount);
+
+            Transaction transaction = working.deposit(normalizedAmount, ref);
+            accountDAO.updateBalance(working.getAccountId(), working.getBalance());
+            transactionDAO.create(transaction);
+            processedRequestDAO.insert(ref);
+
+            commit(connection);
+            syncAccount(account, working);
             return transaction;
         } catch (RuntimeException exception) {
-            logFailed(account, null, TransactionType.DEPOSIT, normalizedAmount, BigDecimal.ZERO,
-                    normalizedReferenceId, exception.getMessage());
+            rollback(connection, exception);
             throw exception;
+        } finally {
+            finishTransaction(connection);
         }
     }
 
     public Transaction withdraw(Account account, BigDecimal amount, String pin, String referenceId) {
-        String normalizedReferenceId = requireNewReference(referenceId, account, null, TransactionType.WITHDRAWAL, amount);
-        requireAccount(account);
-
+        Connection connection = beginTransaction();
         try {
-            validateAccountPin(account, pin);
+            String ref = requireNewReference(referenceId);
+            requireNotProcessed(ref);
+            Account working = loadAccount(account);
+            validateAccountPin(working, pin);
             BigDecimal normalizedAmount = requirePositiveAmount(amount);
-            ensureSufficientBalance(account, normalizedAmount);
-            if (account instanceof SavingsAccount) {
-                ensureSavingsWithdrawalLimit(account.getAccountId());
-            }
+            ensureSufficientBalance(working, normalizedAmount);
+            ensureSavingsWithdrawalLimit(working);
 
-            Transaction transaction = account.withdraw(normalizedAmount, normalizedReferenceId);
-            markProcessed(normalizedReferenceId);
-            logSuccess(transaction);
+            Transaction transaction = working.withdraw(normalizedAmount, ref);
+            accountDAO.updateBalance(working.getAccountId(), working.getBalance());
+            transactionDAO.create(transaction);
+            processedRequestDAO.insert(ref);
+
+            commit(connection);
+            syncAccount(account, working);
             return transaction;
         } catch (RuntimeException exception) {
-            logFailed(account, null, TransactionType.WITHDRAWAL,
-                    amount == null ? BigDecimal.ZERO : amount, BigDecimal.ZERO,
-                    normalizedReferenceId, exception.getMessage());
+            rollback(connection, exception);
             throw exception;
+        } finally {
+            finishTransaction(connection);
         }
     }
 
     public List<Transaction> transfer(Account sender, String recipientPhone, BigDecimal amount, String pin,
                                       String referenceId, CustomerService customerService) {
-        String normalizedReferenceId = requireNewReference(referenceId, sender, null, TransactionType.TRANSFER_OUT, amount);
-        requireAccount(sender);
-        Customer recipient = findRecipient(recipientPhone, customerService);
-
-        Account recipientAccount = null;
+        Connection connection = beginTransaction();
         try {
-            validateAccountPin(sender, pin);
-            BigDecimal normalizedAmount = requirePositiveAmount(amount);
-            recipientAccount = resolveRecipientAccount(sender, recipient);
-            BigDecimal fee = calculateTransferFee(sender, recipient, normalizedAmount);
-            ensureSufficientBalance(sender, normalizedAmount.add(fee));
+            String ref = requireNewReference(referenceId);
+            requireNotProcessed(ref);
 
-            Transaction transferOut = new Transaction(
-                    normalizedReferenceId,
-                    sender.getAccountId(),
-                    recipientAccount.getAccountId(),
-                    TransactionType.TRANSFER_OUT,
-                    normalizedAmount,
-                    "Transfer to " + recipient.getFullName() + " (" + recipient.getPhoneNumber() + ")"
-            );
-            Transaction transferIn = new Transaction(
-                    normalizedReferenceId,
-                    recipientAccount.getAccountId(),
-                    sender.getAccountId(),
-                    TransactionType.TRANSFER_IN,
-                    normalizedAmount,
-                    "Transfer from account " + sender.getAccountId()
-            );
+            Account workingSender = loadAccount(sender);
+            Customer recipient = findRecipient(recipientPhone, customerService);
+            Account recipientAccount = loadAccount(resolveRecipientAccount(workingSender, recipient));
+
+            validateAccountPin(workingSender, pin);
+            BigDecimal normalizedAmount = requirePositiveAmount(amount);
+            BigDecimal fee = calculateTransferFee(workingSender, recipient, normalizedAmount);
+            ensureSufficientBalance(workingSender, normalizedAmount.add(fee));
 
             List<Transaction> transactions = new ArrayList<>();
-            sender.processTransaction(transferOut);
-            logSuccess(transferOut);
+
+            Transaction transferOut = new Transaction(ref, workingSender.getAccountId(),
+                    recipientAccount.getAccountId(), TransactionType.TRANSFER_OUT, normalizedAmount,
+                    "Transfer to " + recipient.getFullName() + " (" + recipient.getPhoneNumber() + ")");
+            workingSender.processTransaction(transferOut);
+            transactionDAO.create(transferOut);
             transactions.add(transferOut);
 
+            Transaction transferIn = new Transaction(ref, recipientAccount.getAccountId(),
+                    workingSender.getAccountId(), TransactionType.TRANSFER_IN, normalizedAmount,
+                    "Transfer from account " + workingSender.getAccountId());
             recipientAccount.processTransaction(transferIn);
-            logSuccess(transferIn);
+            transactionDAO.create(transferIn);
             transactions.add(transferIn);
 
             if (fee.compareTo(BigDecimal.ZERO) > 0) {
-                Transaction feeTransaction = new Transaction(
-                        normalizedReferenceId,
-                        sender.getAccountId(),
-                        null,
-                        TransactionType.FEE,
-                        fee,
-                        "Transfer fee"
-                );
-                sender.processTransaction(feeTransaction);
-                logSuccess(feeTransaction);
+                Transaction feeTransaction = new Transaction(ref, workingSender.getAccountId(),
+                        null, TransactionType.FEE, fee, "Transfer fee");
+                workingSender.processTransaction(feeTransaction);
+                transactionDAO.create(feeTransaction);
                 transactions.add(feeTransaction);
             }
 
-            markProcessed(normalizedReferenceId);
+            accountDAO.updateBalance(workingSender.getAccountId(), workingSender.getBalance());
+            accountDAO.updateBalance(recipientAccount.getAccountId(), recipientAccount.getBalance());
+            processedRequestDAO.insert(ref);
+
+            commit(connection);
+            syncAccount(sender, workingSender);
             return Collections.unmodifiableList(transactions);
         } catch (RuntimeException exception) {
-            logFailed(sender,
-                    recipientAccount == null ? null : recipientAccount.getAccountId(),
-                    TransactionType.TRANSFER_OUT,
-                    amount == null ? BigDecimal.ZERO : amount,
-                    BigDecimal.ZERO,
-                    normalizedReferenceId,
-                    exception.getMessage());
+            rollback(connection, exception);
             throw exception;
+        } finally {
+            finishTransaction(connection);
         }
     }
 
@@ -154,11 +151,10 @@ public class TransactionService {
 
     public BigDecimal previewTransferFee(Account sender, String recipientPhone, BigDecimal amount,
                                          CustomerService customerService) {
-        requireAccount(sender);
+        Account workingSender = loadAccount(sender);
         Customer recipient = findRecipient(recipientPhone, customerService);
-        BigDecimal normalizedAmount = requirePositiveAmount(amount);
-        resolveRecipientAccount(sender, recipient);
-        return calculateTransferFee(sender, recipient, normalizedAmount);
+        resolveRecipientAccount(workingSender, recipient);
+        return calculateTransferFee(workingSender, recipient, requirePositiveAmount(amount));
     }
 
     public BigDecimal previewTransferTotal(Account sender, String recipientPhone, BigDecimal amount,
@@ -168,53 +164,38 @@ public class TransactionService {
     }
 
     public void validateAccountPin(Account account, String rawPin) {
-        requireAccount(account);
+        Account working = loadAccount(account);
         AuthService.validatePinFormat(rawPin);
-        if (!AuthService.hashPin(rawPin).equals(account.getHashedPin())) {
+        if (!AuthService.hashPin(rawPin).equals(working.getHashedPin())) {
             throw new InvalidPinException(0);
         }
     }
 
     public List<Transaction> getHistory(UUID accountId) {
-        return Collections.unmodifiableList(historyByAccountId.getOrDefault(accountId, List.of()));
+        return Collections.unmodifiableList(transactionDAO.findByAccountId(accountId));
     }
 
     public List<Transaction> getDailyWithdrawals(UUID accountId, LocalDate date) {
-        LocalDate targetDate = date == null ? LocalDate.now() : date;
-        List<Transaction> withdrawals = getHistory(accountId).stream()
-                .filter(transaction -> transaction.getTransactionType() == TransactionType.WITHDRAWAL)
-                .filter(transaction -> transaction.getStatus() == TransactionStatus.SUCCESS)
-                .filter(transaction -> transaction.getTimestamp().toLocalDate().equals(targetDate))
-                .toList();
-        return Collections.unmodifiableList(withdrawals);
-    }
-
-    public Set<String> getProcessedReferenceIds() {
-        return Collections.unmodifiableSet(processedReferenceIds);
-    }
-
-    public List<Transaction> getGlobalFailedLog() {
-        return Collections.unmodifiableList(globalFailedLog);
+        return Collections.unmodifiableList(transactionDAO.findDailyWithdrawals(accountId, date));
     }
 
     public boolean isReferenceProcessed(String referenceId) {
-        return processedReferenceIds.contains(normalizeReference(referenceId));
+        String normalized = referenceId == null ? "" : referenceId.trim();
+        return processedRequestDAO.exists(normalized);
     }
 
-    private String requireNewReference(String referenceId, Account account, UUID targetAccountId,
-                                       TransactionType transactionType, BigDecimal amount) {
-        String normalizedReferenceId = normalizeReference(referenceId);
-        if (normalizedReferenceId.isEmpty()) {
+    private String requireNewReference(String referenceId) {
+        String normalized = referenceId == null ? "" : referenceId.trim();
+        if (normalized.isEmpty()) {
             throw new IllegalArgumentException("Reference ID is required.");
         }
-        if (processedReferenceIds.contains(normalizedReferenceId)) {
-            Transaction duplicate = createStatusTransaction(account, targetAccountId, transactionType,
-                    amount, BigDecimal.ZERO, normalizedReferenceId, TransactionStatus.DUPLICATE,
-                    "Duplicate transaction reference");
-            globalFailedLog.add(duplicate);
-            throw new DuplicateTransactionException(normalizedReferenceId);
+        return normalized;
+    }
+
+    private void requireNotProcessed(String referenceId) {
+        if (processedRequestDAO.exists(referenceId)) {
+            throw new DuplicateTransactionException(referenceId);
         }
-        return normalizedReferenceId;
     }
 
     private Customer findRecipient(String recipientPhone, CustomerService customerService) {
@@ -231,10 +212,10 @@ public class TransactionService {
         AccountType targetType = sameOwner && sender.getAccountType() == AccountType.WALLET
                 ? AccountType.SAVINGS
                 : AccountType.WALLET;
-        Optional<Account> account = recipient.getAccountByType(targetType);
-        return account.orElseThrow(() -> new AccountNotFoundException(
-                recipient.getPhoneNumber() + " " + targetType.name().toLowerCase() + " account"
-        ));
+        return recipient.getAccountByType(targetType)
+                .orElseThrow(() -> new AccountNotFoundException(
+                        recipient.getPhoneNumber() + " " + targetType.name().toLowerCase() + " account"
+                ));
     }
 
     private BigDecimal calculateTransferFee(Account sender, Customer recipient, BigDecimal amount) {
@@ -244,8 +225,10 @@ public class TransactionService {
         return WalletAccount.calculateTransferFee(amount);
     }
 
-    private void ensureSavingsWithdrawalLimit(UUID accountId) {
-        if (getDailyWithdrawals(accountId, LocalDate.now()).size() >= SavingsAccount.DAILY_WITHDRAWAL_LIMIT) {
+    private void ensureSavingsWithdrawalLimit(Account account) {
+        if (account instanceof SavingsAccount &&
+                transactionDAO.findDailyWithdrawals(account.getAccountId(), LocalDate.now()).size()
+                        >= SavingsAccount.DAILY_WITHDRAWAL_LIMIT) {
             throw new WithdrawalLimitExceededException(SavingsAccount.DAILY_WITHDRAWAL_LIMIT);
         }
     }
@@ -256,54 +239,77 @@ public class TransactionService {
         }
     }
 
-    private void requireAccount(Account account) {
+    private Account loadAccount(Account account) {
         if (account == null) {
             throw new AccountNotFoundException("account");
         }
+        return accountDAO.findById(account.getAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(String.valueOf(account.getAccountId())));
     }
 
     private BigDecimal requirePositiveAmount(BigDecimal amount) {
-        BigDecimal normalizedAmount = amount == null ? BigDecimal.ZERO : amount.stripTrailingZeros();
-        if (normalizedAmount.compareTo(BigDecimal.ZERO) <= 0) {
+        BigDecimal normalized = amount == null ? BigDecimal.ZERO : amount.stripTrailingZeros();
+        if (normalized.compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidAmountException("Amount must be greater than zero.");
         }
-        return normalizedAmount;
+        return normalized;
     }
 
-    private void markProcessed(String referenceId) {
-        processedReferenceIds.add(referenceId);
+    private void syncAccount(Account target, Account source) {
+        if (target == null || source == null) {
+            return;
+        }
+        target.setBalance(source.getBalance());
+        target.setActive(source.isActive());
+        target.setHashedPin(source.getHashedPin());
+        target.setCreatedAt(source.getCreatedAt());
     }
 
-    private void logSuccess(Transaction transaction) {
-        historyByAccountId
-                .computeIfAbsent(transaction.getAccountId(), key -> new ArrayList<>())
-                .add(transaction);
+    private Connection beginTransaction() {
+        Connection connection = DBConnection.getConnection();
+        DBConnection.bindTransactionConnection(connection);
+        try {
+            connection.setAutoCommit(false);
+            return connection;
+        } catch (SQLException exception) {
+            DBConnection.clearTransactionConnection();
+            closeConnection(connection);
+            throw new DatabaseException("Could not start database transaction", exception);
+        }
     }
 
-    private void logFailed(Account account, UUID targetAccountId, TransactionType transactionType,
-                           BigDecimal amount, BigDecimal fee, String referenceId, String description) {
-        globalFailedLog.add(createStatusTransaction(account, targetAccountId, transactionType, amount, fee,
-                referenceId, TransactionStatus.FAILED, description));
+    private void commit(Connection connection) {
+        try {
+            connection.commit();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not commit database transaction", exception);
+        }
     }
 
-    private Transaction createStatusTransaction(Account account, UUID targetAccountId, TransactionType transactionType,
-                                                BigDecimal amount, BigDecimal fee, String referenceId,
-                                                TransactionStatus status, String description) {
-        return new Transaction(
-                UUID.randomUUID(),
-                referenceId,
-                account == null ? null : account.getAccountId(),
-                targetAccountId,
-                transactionType,
-                amount == null ? BigDecimal.ZERO : amount,
-                fee == null ? BigDecimal.ZERO : fee,
-                status,
-                LocalDateTime.now(),
-                description
-        );
+    private void rollback(Connection connection, RuntimeException originalException) {
+        try {
+            connection.rollback();
+        } catch (SQLException exception) {
+            originalException.addSuppressed(new DatabaseException("Could not roll back database transaction", exception));
+        }
     }
 
-    private String normalizeReference(String referenceId) {
-        return referenceId == null ? "" : referenceId.trim();
+    private void finishTransaction(Connection connection) {
+        try {
+            connection.setAutoCommit(true);
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not reset database transaction state", exception);
+        } finally {
+            DBConnection.clearTransactionConnection();
+            closeConnection(connection);
+        }
+    }
+
+    private void closeConnection(Connection connection) {
+        try {
+            connection.close();
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not close database connection", exception);
+        }
     }
 }
