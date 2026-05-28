@@ -77,28 +77,28 @@
 
     <!-- ── Center ── -->
     <center>
-        <StackPane style="-fx-padding: 30;">
+        <VBox style="-fx-padding: 24 30; -fx-alignment: top-left;">
 
             <!-- Empty state — shown when customer has no accounts -->
-            <VBox fx:id="emptyStateBox" spacing="14"
-                  style="-fx-alignment: center; -fx-padding: 40;">
+            <VBox fx:id="emptyStateBox" spacing="10"
+                  style="-fx-alignment: center-left;">
                 <Label text="No accounts yet"
-                       style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #7f8c8d;"/>
+                       style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #7f8c8d;"/>
                 <Label text="Go to Manage Accounts to create your wallet or savings account."
                        wrapText="true"
-                       style="-fx-font-size: 13; -fx-text-fill: #95a5a6; -fx-text-alignment: center;"/>
-                <Button text="Manage Accounts" onAction="#handleManageAccounts" prefWidth="180"/>
+                       style="-fx-font-size: 12; -fx-text-fill: #95a5a6;"/>
+                <Button text="Manage Accounts" onAction="#handleManageAccounts" prefWidth="160"/>
             </VBox>
 
-            <!-- Balance cards — shown when customer has at least one account -->
-            <HBox fx:id="cardsBox" spacing="16" style="-fx-alignment: center;">
+            <!-- Balance cards — pinned to top-left -->
+            <HBox fx:id="cardsBox" spacing="16" VBox.vgrow="NEVER">
 
                 <!-- Wallet card -->
                 <VBox spacing="4" style="-fx-background-color: #1a6fa8;
                                          -fx-background-radius: 8;
                                          -fx-padding: 16 24;
                                          -fx-min-width: 170; -fx-pref-width: 170;
-                                         -fx-max-height: 90; -fx-pref-height: 90;">
+                                         -fx-pref-height: 80; -fx-max-height: 80;">
                     <Label text="WALLET"
                            style="-fx-font-size: 10; -fx-font-weight: bold;
                                   -fx-text-fill: #a8cce8;"/>
@@ -112,7 +112,7 @@
                                          -fx-background-radius: 8;
                                          -fx-padding: 16 24;
                                          -fx-min-width: 170; -fx-pref-width: 170;
-                                         -fx-max-height: 90; -fx-pref-height: 90;">
+                                         -fx-pref-height: 80; -fx-max-height: 80;">
                     <Label text="SAVINGS"
                            style="-fx-font-size: 10; -fx-font-weight: bold;
                                   -fx-text-fill: #a8d5b8;"/>
@@ -126,7 +126,7 @@
                                          -fx-background-radius: 8;
                                          -fx-padding: 16 24;
                                          -fx-min-width: 170; -fx-pref-width: 170;
-                                         -fx-max-height: 90; -fx-pref-height: 90;">
+                                         -fx-pref-height: 80; -fx-max-height: 80;">
                     <Label text="LOAN BALANCE"
                            style="-fx-font-size: 10; -fx-font-weight: bold;
                                   -fx-text-fill: #f0c89a;"/>
@@ -136,7 +136,7 @@
                 </VBox>
 
             </HBox>
-        </StackPane>
+        </VBox>
     </center>
 
 </BorderPane>
