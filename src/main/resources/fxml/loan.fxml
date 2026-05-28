@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.igirepay.lab3.controller.LoanController">
+
+    <top>
+        <VBox style="-fx-padding: 16 20 6 20;">
+            <Label text="Loan" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+            <Label text="Max 100,000 RWF  |  10% flat interest  |  One loan at a time"
+                   style="-fx-font-size: 12; -fx-text-fill: #666;"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="false" style="-fx-padding: 0;">
+            <VBox spacing="20" style="-fx-padding: 30;" minWidth="460">
+
+                <!-- Loan status card -->
+                <VBox style="-fx-background-color: #eaf4fb; -fx-padding: 14;
+                             -fx-border-color: #aed6f1; -fx-border-radius: 6;
+                             -fx-background-radius: 6;">
+                    <Label text="LOAN STATUS"
+                           style="-fx-font-size: 10; -fx-font-weight: bold; -fx-text-fill: #2980b9;"/>
+                    <Label fx:id="loanStatusLabel" text="" wrapText="true"
+                           style="-fx-font-family: monospace; -fx-font-size: 12; -fx-padding: 6 0 0 0;"/>
+                </VBox>
+
+                <!-- Request a loan -->
+                <VBox spacing="10"
+                      style="-fx-background-color: #f9f9f9; -fx-padding: 16;
+                             -fx-border-color: #ddd; -fx-border-radius: 6;
+                             -fx-background-radius: 6;">
+                    <Label text="Request a Loan"
+                           style="-fx-font-size: 14; -fx-font-weight: bold;"/>
+                    <GridPane hgap="12" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="140"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+                        <Label text="Amount (RWF):"  GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <TextField fx:id="requestAmountField" promptText="e.g. 50000"
+                                   GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                        <Label text="PIN:"           GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <PasswordField fx:id="requestPinField" promptText="5-digit PIN"
+                                       GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    </GridPane>
+                    <Button text="Request Loan" onAction="#handleRequestLoan" prefWidth="160"/>
+                    <Label fx:id="requestResultLabel" text="" wrapText="true"/>
+                </VBox>
+
+                <!-- Repay loan -->
+                <VBox spacing="10"
+                      style="-fx-background-color: #f9f9f9; -fx-padding: 16;
+                             -fx-border-color: #ddd; -fx-border-radius: 6;
+                             -fx-background-radius: 6;">
+                    <Label text="Repay Loan"
+                           style="-fx-font-size: 14; -fx-font-weight: bold;"/>
+                    <GridPane hgap="12" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="140"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+                        <Label text="Amount (RWF):"  GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <TextField fx:id="repayAmountField" promptText="e.g. 10000"
+                                   GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                        <Label text="PIN:"           GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <PasswordField fx:id="repayPinField" promptText="5-digit PIN"
+                                       GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    </GridPane>
+                    <Button text="Repay" onAction="#handleRepayLoan" prefWidth="160"/>
+                    <Label fx:id="repayResultLabel" text="" wrapText="true"/>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox style="-fx-padding: 12;">
+            <Button text="← Back to Dashboard" onAction="#handleBack" prefWidth="180"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

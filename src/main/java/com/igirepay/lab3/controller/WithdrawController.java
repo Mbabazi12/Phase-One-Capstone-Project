@@ -42,9 +42,16 @@ public class WithdrawController {
     @FXML
     public void initialize() {
         Customer customer = SessionManager.getCurrentCustomer();
-        accounts = customer.getAccounts();
+        // Withdraw from wallet only — savings withdrawals go through the Savings screen
+        accounts = customer.getAccounts().stream()
+                .filter(a -> a.getAccountType() == com.igirepay.lab1.model.AccountType.WALLET)
+                .toList();
         for (Account account : accounts) {
-            accountCombo.getItems().add(account.getAccountName() + " (" + account.getAccountType().name() + ")");
+            accountCombo.getItems().add(account.getAccountName() + " (WALLET)");
+        }
+        if (accounts.isEmpty()) {
+            resultLabel.setStyle("-fx-text-fill: red;");
+            resultLabel.setText("No wallet account found. Create one from Manage Accounts.");
         }
     }
 
