@@ -7,136 +7,159 @@
 
     <!-- ── Top header ── -->
     <top>
-        <VBox style="-fx-padding: 16 20 10 20; -fx-spacing: 4;
+        <VBox style="-fx-padding: 14 20 10 20; -fx-spacing: 2;
                      -fx-background-color: #2c3e50;">
             <Label fx:id="welcomeLabel"
-                   style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                   style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: white;"/>
             <Label text="Account Overview"
-                   style="-fx-font-size: 12; -fx-text-fill: #bdc3c7;"/>
+                   style="-fx-font-size: 11; -fx-text-fill: #bdc3c7;"/>
         </VBox>
     </top>
 
-    <!-- ── Left sidebar ── -->
-    <left>
-        <VBox spacing="6"
-              style="-fx-padding: 20 12 20 12; -fx-background-color: #34495e;
-                     -fx-min-width: 160; -fx-pref-width: 160;">
-
-            <Label text="TRANSACTIONS"
-                   style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
-                          -fx-padding: 8 0 4 4; -fx-font-weight: bold;"/>
-            <Button text="Deposit"
-                    onAction="#handleDeposit" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Withdraw"
-                    onAction="#handleWithdraw" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Transfer"
-                    onAction="#handleTransfer" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Savings"
-                    onAction="#handleSavings" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Loan"
-                    onAction="#handleLoan" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-
-            <Label text="ACCOUNT"
-                   style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
-                          -fx-padding: 12 0 4 4; -fx-font-weight: bold;"/>
-            <Button text="Transaction History"
-                    onAction="#handleHistory" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Reports"
-                    onAction="#handleReports" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Manage Accounts"
-                    onAction="#handleManageAccounts" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-            <Button text="Change PIN"
-                    onAction="#handleChangePin" maxWidth="Infinity"
-                    style="-fx-background-color: #3d566e; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-
-            <Region VBox.vgrow="ALWAYS"/>
-
-            <Button text="Logout"
-                    onAction="#handleLogout" maxWidth="Infinity"
-                    style="-fx-background-color: #c0392b; -fx-text-fill: white;
-                           -fx-alignment: center-left; -fx-padding: 8 12;"/>
-        </VBox>
-    </left>
-
-    <!-- ── Center ── -->
+    <!-- ── Full-width main panel (replaces separate left + center) ── -->
     <center>
-        <VBox style="-fx-padding: 24 30; -fx-alignment: top-left;">
+        <HBox>
 
-            <!-- Empty state — shown when customer has no accounts -->
-            <VBox fx:id="emptyStateBox" spacing="10"
-                  style="-fx-alignment: center-left;">
-                <Label text="No accounts yet"
-                       style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #7f8c8d;"/>
-                <Label text="Go to Manage Accounts to create your wallet or savings account."
-                       wrapText="true"
-                       style="-fx-font-size: 12; -fx-text-fill: #95a5a6;"/>
-                <Button text="Manage Accounts" onAction="#handleManageAccounts" prefWidth="160"/>
+            <!-- ── Navigation sidebar ── -->
+            <VBox spacing="4"
+                  style="-fx-padding: 16 10 16 10; -fx-background-color: #34495e;
+                         -fx-min-width: 180; -fx-pref-width: 180;">
+
+                <Label text="TRANSACTIONS"
+                       style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
+                              -fx-padding: 6 0 2 4; -fx-font-weight: bold;"/>
+                <Button text="Deposit"
+                        onAction="#handleDeposit" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+                <Button text="Withdraw"
+                        onAction="#handleWithdraw" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+                <Button text="Transfer"
+                        onAction="#handleTransfer" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+                <Button text="Savings"
+                        onAction="#handleSavings" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+                <Button text="Loan"
+                        onAction="#handleLoan" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+
+                <Label text="ACCOUNT"
+                       style="-fx-font-size: 10; -fx-text-fill: #95a5a6;
+                              -fx-padding: 10 0 2 4; -fx-font-weight: bold;"/>
+                <Button text="Transaction History"
+                        onAction="#handleHistory" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+                <Button text="Reports"
+                        onAction="#handleReports" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+                <Button text="Manage Accounts"
+                        onAction="#handleManageAccounts" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+                <Button text="Change PIN"
+                        onAction="#handleChangePin" maxWidth="Infinity"
+                        style="-fx-background-color: #3d566e; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
+
+                <Region VBox.vgrow="ALWAYS"/>
+
+                <Button text="Logout"
+                        onAction="#handleLogout" maxWidth="Infinity"
+                        style="-fx-background-color: #922b21; -fx-text-fill: white;
+                               -fx-alignment: center-left; -fx-padding: 7 12; -fx-font-size: 12;"/>
             </VBox>
 
-            <!-- Balance cards — pinned to top-left -->
-            <HBox fx:id="cardsBox" spacing="16" VBox.vgrow="NEVER">
+            <!-- ── Main content area ── -->
+            <VBox spacing="16" HBox.hgrow="ALWAYS"
+                  style="-fx-padding: 20 24; -fx-background-color: #f0f2f5;">
 
-                <!-- Wallet card -->
-                <VBox spacing="4" style="-fx-background-color: #1a6fa8;
-                                         -fx-background-radius: 8;
-                                         -fx-padding: 16 24;
-                                         -fx-min-width: 170; -fx-pref-width: 170;
-                                         -fx-pref-height: 80; -fx-max-height: 80;">
-                    <Label text="WALLET"
-                           style="-fx-font-size: 10; -fx-font-weight: bold;
-                                  -fx-text-fill: #a8cce8;"/>
-                    <Label fx:id="walletBalanceLabel" text="0.00 RWF"
-                           style="-fx-font-size: 16; -fx-font-weight: bold;
-                                  -fx-text-fill: white;" wrapText="true"/>
+                <!-- Empty state -->
+                <VBox fx:id="emptyStateBox" spacing="8" style="-fx-alignment: center-left;">
+                    <Label text="No accounts yet"
+                           style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #7f8c8d;"/>
+                    <Label text="Go to Manage Accounts to create your wallet or savings account."
+                           wrapText="true"
+                           style="-fx-font-size: 12; -fx-text-fill: #95a5a6;"/>
+                    <Button text="Manage Accounts" onAction="#handleManageAccounts" prefWidth="160"/>
                 </VBox>
 
-                <!-- Savings card -->
-                <VBox spacing="4" style="-fx-background-color: #1e7e4a;
-                                         -fx-background-radius: 8;
-                                         -fx-padding: 16 24;
-                                         -fx-min-width: 170; -fx-pref-width: 170;
-                                         -fx-pref-height: 80; -fx-max-height: 80;">
-                    <Label text="SAVINGS"
-                           style="-fx-font-size: 10; -fx-font-weight: bold;
-                                  -fx-text-fill: #a8d5b8;"/>
-                    <Label fx:id="savingsBalanceLabel" text="0.00 RWF"
-                           style="-fx-font-size: 16; -fx-font-weight: bold;
-                                  -fx-text-fill: white;" wrapText="true"/>
+                <!-- Balance cards row -->
+                <HBox fx:id="cardsBox" spacing="14">
+
+                    <VBox spacing="3" style="-fx-background-color: #1a6fa8;
+                                             -fx-background-radius: 7;
+                                             -fx-padding: 14 20;
+                                             -fx-pref-width: 180; -fx-pref-height: 76;
+                                             -fx-max-height: 76;">
+                        <Label text="WALLET"
+                               style="-fx-font-size: 10; -fx-font-weight: bold; -fx-text-fill: #a8cce8;"/>
+                        <Label fx:id="walletBalanceLabel" text="—"
+                               style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: white;"
+                               wrapText="true"/>
+                    </VBox>
+
+                    <VBox spacing="3" style="-fx-background-color: #1e7e4a;
+                                             -fx-background-radius: 7;
+                                             -fx-padding: 14 20;
+                                             -fx-pref-width: 180; -fx-pref-height: 76;
+                                             -fx-max-height: 76;">
+                        <Label text="SAVINGS"
+                               style="-fx-font-size: 10; -fx-font-weight: bold; -fx-text-fill: #a8d5b8;"/>
+                        <Label fx:id="savingsBalanceLabel" text="—"
+                               style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: white;"
+                               wrapText="true"/>
+                    </VBox>
+
+                    <VBox spacing="3" style="-fx-background-color: #7d4e00;
+                                             -fx-background-radius: 7;
+                                             -fx-padding: 14 20;
+                                             -fx-pref-width: 180; -fx-pref-height: 76;
+                                             -fx-max-height: 76;">
+                        <Label text="LOAN BALANCE"
+                               style="-fx-font-size: 10; -fx-font-weight: bold; -fx-text-fill: #e8c99a;"/>
+                        <Label fx:id="loanBalanceLabel" text="—"
+                               style="-fx-font-size: 13; -fx-font-weight: bold; -fx-text-fill: white;"
+                               wrapText="true"/>
+                    </VBox>
+
+                </HBox>
+
+                <!-- Recent transactions section -->
+                <VBox spacing="6" VBox.vgrow="ALWAYS">
+                    <Label text="Recent Transactions"
+                           style="-fx-font-size: 12; -fx-font-weight: bold;
+                                  -fx-text-fill: #4a4a4a; -fx-padding: 0 0 2 0;"/>
+
+                    <TableView fx:id="recentTxTable" VBox.vgrow="ALWAYS"
+                               style="-fx-background-color: white;
+                                      -fx-border-color: #dde1e7;
+                                      -fx-border-radius: 6;
+                                      -fx-background-radius: 6;
+                                      -fx-font-size: 12;">
+                        <columns>
+                            <TableColumn fx:id="colTxDate"   text="Date"    prefWidth="150"/>
+                            <TableColumn fx:id="colTxType"   text="Type"    prefWidth="130"/>
+                            <TableColumn fx:id="colTxAmount" text="Amount"  prefWidth="130"/>
+                            <TableColumn fx:id="colTxStatus" text="Status"  prefWidth="90"/>
+                            <TableColumn fx:id="colTxDesc"   text="Description" prefWidth="220"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="No recent transactions."
+                                   style="-fx-text-fill: #aaa; -fx-font-size: 12;"/>
+                        </placeholder>
+                    </TableView>
                 </VBox>
 
-                <!-- Loan card -->
-                <VBox spacing="4" style="-fx-background-color: #b05a00;
-                                         -fx-background-radius: 8;
-                                         -fx-padding: 16 24;
-                                         -fx-min-width: 170; -fx-pref-width: 170;
-                                         -fx-pref-height: 80; -fx-max-height: 80;">
-                    <Label text="LOAN BALANCE"
-                           style="-fx-font-size: 10; -fx-font-weight: bold;
-                                  -fx-text-fill: #f0c89a;"/>
-                    <Label fx:id="loanBalanceLabel" text="No active loan"
-                           style="-fx-font-size: 14; -fx-font-weight: bold;
-                                  -fx-text-fill: white;" wrapText="true"/>
-                </VBox>
-
-            </HBox>
-        </VBox>
+            </VBox>
+        </HBox>
     </center>
 
 </BorderPane>
