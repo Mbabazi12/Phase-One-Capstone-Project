@@ -75,7 +75,7 @@ public class LoanController {
         } catch (InvalidAmountException | IllegalStateException e) {
             setError(requestResultLabel, e.getMessage());
         } catch (DatabaseException e) {
-            showError("Database error. Please try again.");
+            showError("Database error: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
         }
     }
 
@@ -111,7 +111,7 @@ public class LoanController {
         } catch (IllegalStateException e) {
             setError(repayResultLabel, e.getMessage());
         } catch (DatabaseException e) {
-            showError("Database error. Please try again.");
+            showError("Database error: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
         }
     }
 
