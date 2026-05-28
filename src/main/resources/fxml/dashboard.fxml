@@ -91,44 +91,47 @@
             </VBox>
 
             <!-- Balance cards — shown when customer has at least one account -->
-            <HBox fx:id="cardsBox" spacing="20" style="-fx-alignment: center;">
+            <HBox fx:id="cardsBox" spacing="16" style="-fx-alignment: center;">
 
                 <!-- Wallet card -->
-                <VBox spacing="8" style="-fx-background-color: #2980b9;
-                                         -fx-background-radius: 10;
-                                         -fx-padding: 24 30;
-                                         -fx-min-width: 180; -fx-pref-width: 180;">
+                <VBox spacing="4" style="-fx-background-color: #1a6fa8;
+                                         -fx-background-radius: 8;
+                                         -fx-padding: 16 24;
+                                         -fx-min-width: 170; -fx-pref-width: 170;
+                                         -fx-max-height: 90; -fx-pref-height: 90;">
                     <Label text="WALLET"
-                           style="-fx-font-size: 11; -fx-font-weight: bold;
-                                  -fx-text-fill: #d6eaf8;"/>
+                           style="-fx-font-size: 10; -fx-font-weight: bold;
+                                  -fx-text-fill: #a8cce8;"/>
                     <Label fx:id="walletBalanceLabel" text="0.00 RWF"
-                           style="-fx-font-size: 20; -fx-font-weight: bold;
+                           style="-fx-font-size: 16; -fx-font-weight: bold;
                                   -fx-text-fill: white;" wrapText="true"/>
                 </VBox>
 
                 <!-- Savings card -->
-                <VBox spacing="8" style="-fx-background-color: #27ae60;
-                                         -fx-background-radius: 10;
-                                         -fx-padding: 24 30;
-                                         -fx-min-width: 180; -fx-pref-width: 180;">
+                <VBox spacing="4" style="-fx-background-color: #1e7e4a;
+                                         -fx-background-radius: 8;
+                                         -fx-padding: 16 24;
+                                         -fx-min-width: 170; -fx-pref-width: 170;
+                                         -fx-max-height: 90; -fx-pref-height: 90;">
                     <Label text="SAVINGS"
-                           style="-fx-font-size: 11; -fx-font-weight: bold;
-                                  -fx-text-fill: #d5f5e3;"/>
+                           style="-fx-font-size: 10; -fx-font-weight: bold;
+                                  -fx-text-fill: #a8d5b8;"/>
                     <Label fx:id="savingsBalanceLabel" text="0.00 RWF"
-                           style="-fx-font-size: 20; -fx-font-weight: bold;
+                           style="-fx-font-size: 16; -fx-font-weight: bold;
                                   -fx-text-fill: white;" wrapText="true"/>
                 </VBox>
 
                 <!-- Loan card -->
-                <VBox spacing="8" style="-fx-background-color: #e67e22;
-                                         -fx-background-radius: 10;
-                                         -fx-padding: 24 30;
-                                         -fx-min-width: 180; -fx-pref-width: 180;">
+                <VBox spacing="4" style="-fx-background-color: #b05a00;
+                                         -fx-background-radius: 8;
+                                         -fx-padding: 16 24;
+                                         -fx-min-width: 170; -fx-pref-width: 170;
+                                         -fx-max-height: 90; -fx-pref-height: 90;">
                     <Label text="LOAN BALANCE"
-                           style="-fx-font-size: 11; -fx-font-weight: bold;
-                                  -fx-text-fill: #fdebd0;"/>
+                           style="-fx-font-size: 10; -fx-font-weight: bold;
+                                  -fx-text-fill: #f0c89a;"/>
                     <Label fx:id="loanBalanceLabel" text="No active loan"
-                           style="-fx-font-size: 16; -fx-font-weight: bold;
+                           style="-fx-font-size: 14; -fx-font-weight: bold;
                                   -fx-text-fill: white;" wrapText="true"/>
                 </VBox>
 
