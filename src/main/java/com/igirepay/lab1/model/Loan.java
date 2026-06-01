@@ -4,19 +4,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
-/**
- * Represents a loan taken by a customer.
- *
- * Rules:
- *  - Maximum loan amount: 100,000 RWF
- *  - Interest rate: 10% flat on the principal
- *  - Total repayable = principal + (principal * 10%)
- *  - A customer cannot take a new loan while one is still outstanding
- */
 public class Loan {
 
-    public static final BigDecimal MAX_LOAN_AMOUNT  = new BigDecimal("100000");
-    public static final BigDecimal INTEREST_RATE    = new BigDecimal("0.10");
+    public static final BigDecimal MAX_LOAN_AMOUNT     = new BigDecimal("100000");
+    public static final BigDecimal PREMIUM_LOAN_AMOUNT = new BigDecimal("500000");
+    public static final BigDecimal PREMIUM_TX_THRESHOLD = new BigDecimal("300000");
+    public static final BigDecimal INTEREST_RATE       = new BigDecimal("0.10");
 
     public enum LoanStatus { ACTIVE, FULLY_PAID }
 
@@ -42,7 +35,6 @@ public class Loan {
         this.createdAt      = createdAt;
     }
 
-    /** Factory — creates a new loan with interest pre-calculated. */
     public static Loan create(int customerId, BigDecimal principal) {
         BigDecimal interest  = principal.multiply(INTEREST_RATE).setScale(4, RoundingMode.HALF_UP);
         BigDecimal repayable = principal.add(interest).setScale(4, RoundingMode.HALF_UP);
@@ -58,7 +50,6 @@ public class Loan {
         return getRemainingBalance().compareTo(BigDecimal.ZERO) <= 0;
     }
 
-    // ── getters / setters ────────────────────────────────────────────────────
 
     public int getLoanId()                        { return loanId; }
     public void setLoanId(int loanId)             { this.loanId = loanId; }
