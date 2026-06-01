@@ -22,17 +22,14 @@ import javafx.scene.control.TextField;
 
 public class LoanController {
 
-    // ── Request section ──
     @FXML private TextField   requestAmountField;
     @FXML private PasswordField requestPinField;
     @FXML private Label       requestResultLabel;
 
-    // ── Repay section ──
     @FXML private TextField   repayAmountField;
     @FXML private PasswordField repayPinField;
     @FXML private Label       repayResultLabel;
 
-    // ── Status section ──
     @FXML private Label loanStatusLabel;
 
     private final LoanService    loanService;
@@ -123,6 +120,12 @@ public class LoanController {
     private void refreshLoanStatus() {
         Customer customer = SessionManager.getCurrentCustomer();
         Optional<Loan> activeLoan = loanService.getActiveLoan(customer.getCustomerId());
+        BigDecimal limit = loanService.getLoanLimit(customer);
+        String limitLine = "Your limit: " + fmt(limit) +
+                (limit.compareTo(Loan.PREMIUM_LOAN_AMOUNT) == 0
+                        ? " (Premium — high transaction volume)"
+                        : " (Transact 300,000+ RWF to unlock 500,000 RWF)");
+
         if (activeLoan.isPresent()) {
             Loan loan = activeLoan.get();
             loanStatusLabel.setText(
@@ -132,8 +135,7 @@ public class LoanController {
                     "Amount paid:      " + fmt(loan.getAmountPaid()) + "\n" +
                     "Remaining:        " + fmt(loan.getRemainingBalance()));
         } else {
-            loanStatusLabel.setText("No active loan.\nMax loan: " +
-                    fmt(Loan.MAX_LOAN_AMOUNT) + "  |  Interest: 10% flat");
+            loanStatusLabel.setText("No active loan.\n" + limitLine + "\nInterest: 10% flat");
         }
     }
 
