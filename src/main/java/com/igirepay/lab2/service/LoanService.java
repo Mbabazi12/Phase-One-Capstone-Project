@@ -25,33 +25,39 @@ import com.igirepay.lab2.dao.TransactionDAO;
 
 public class LoanService {
 
-    private final LoanDAO loanDAO;
-    private final AccountDAO accountDAO;
+    private final LoanDAO        loanDAO;
+    private final AccountDAO     accountDAO;
     private final TransactionDAO transactionDAO;
 
     public LoanService() {
-        this.loanDAO         = new LoanDAO();
-        this.accountDAO      = new AccountDAO();
-        this.transactionDAO  = new TransactionDAO();
+        this.loanDAO        = new LoanDAO();
+        this.accountDAO     = new AccountDAO();
+        this.transactionDAO = new TransactionDAO();
     }
 
+    // ── Public API ───────────────────────────────────────────────────────────
+
     /**
-     * Request a loan. Disburses the principal directly into the customer's wallet.
-     * Rules:
-     *  - Amount must be > 0 and <= 100,000 RWF
-     *  - Customer must not have an existing active loan
+     * Request a loan. Disburses the principal into the customer's wallet.
+     * Limit: 100,000 RWF by default.
+     * Premium limit: 500,000 RWF if total transaction volume > 300,000 RWF.
+     * 10% flat interest applied on the principal.
      */
     public Loan requestLoan(Customer customer, BigDecimal amount) {
         validateAmount(amount);
 
-        if (amount.compareTo(Loan.MAX_LOAN_AMOUNT) > 0) {
+        BigDecimal limit = resolveLoanLimit(customer);
+        if (amount.compareTo(limit) > 0) {
+            String hint = limit.compareTo(Loan.MAX_LOAN_AMOUNT) == 0
+                    ? " Transact over 300,000 RWF total to unlock up to 500,000 RWF."
+                    : "";
             throw new InvalidAmountException(
-                    "Loan amount cannot exceed " + Loan.MAX_LOAN_AMOUNT.toPlainString() + " RWF.");
+                    "Loan amount cannot exceed " + limit.toPlainString() + " RWF." + hint);
         }
 
         if (loanDAO.findActiveLoan(customer.getCustomerId()).isPresent()) {
             throw new IllegalStateException(
-                    "You already have an active loan. Please repay it fully before requesting a new one.");
+                    "You already have an active loan. Repay it fully before requesting a new one.");
         }
 
         Account wallet = customer.getAccountByType(AccountType.WALLET)
@@ -65,17 +71,14 @@ public class LoanService {
             Loan loan = Loan.create(customer.getCustomerId(), amount);
             loanDAO.create(loan);
 
-            // Disburse principal into wallet — add to current balance
-            BigDecimal newBalance = workingWallet.getBalance().add(amount);
-            workingWallet.setBalance(newBalance);
+            workingWallet.setBalance(workingWallet.getBalance().add(amount));
             accountDAO.updateBalance(workingWallet.getAccountId(), workingWallet.getBalance());
 
-            Transaction tx = new Transaction(
+            transactionDAO.create(new Transaction(
                     UUID.randomUUID().toString(),
                     workingWallet.getAccountId(), 0,
                     TransactionType.LOAN_DISBURSEMENT, amount,
-                    "Loan disbursement (loan #" + loan.getLoanId() + ")");
-            transactionDAO.create(tx);
+                    "Loan disbursement (loan #" + loan.getLoanId() + ")"));
 
             commit(connection);
             syncAccount(wallet, workingWallet);
@@ -90,7 +93,7 @@ public class LoanService {
 
     /**
      * Repay part or all of the active loan from the customer's wallet.
-     * Repayment amount must be > 0 and <= remaining balance.
+     * Caps repayment at remaining balance so the customer cannot overpay.
      */
     public Loan repayLoan(Customer customer, BigDecimal amount) {
         validateAmount(amount);
@@ -98,9 +101,8 @@ public class LoanService {
         Loan loan = loanDAO.findActiveLoan(customer.getCustomerId())
                 .orElseThrow(() -> new IllegalStateException("No active loan found."));
 
-        BigDecimal remaining = loan.getRemainingBalance();
-        // Cap repayment at remaining balance so user can't overpay
-        BigDecimal repayAmount = amount.compareTo(remaining) > 0 ? remaining : amount;
+        BigDecimal repayAmount = amount.compareTo(loan.getRemainingBalance()) > 0
+                ? loan.getRemainingBalance() : amount;
 
         Account wallet = customer.getAccountByType(AccountType.WALLET)
                 .orElseThrow(() -> new IllegalStateException("Wallet account not found."));
@@ -113,23 +115,21 @@ public class LoanService {
 
         Connection connection = beginTransaction();
         try {
-            // Deduct repayment from wallet balance
-            BigDecimal newBalance = workingWallet.getBalance().subtract(repayAmount);
-            workingWallet.setBalance(newBalance);
+            workingWallet.setBalance(workingWallet.getBalance().subtract(repayAmount));
             accountDAO.updateBalance(workingWallet.getAccountId(), workingWallet.getBalance());
 
-            BigDecimal newPaid = loan.getAmountPaid().add(repayAmount).setScale(4, RoundingMode.HALF_UP);
+            BigDecimal newPaid = loan.getAmountPaid().add(repayAmount)
+                    .setScale(4, RoundingMode.HALF_UP);
             loan.setAmountPaid(newPaid);
             LoanStatus newStatus = loan.isFullyPaid() ? LoanStatus.FULLY_PAID : LoanStatus.ACTIVE;
             loan.setStatus(newStatus);
             loanDAO.updateRepayment(loan.getLoanId(), newPaid, newStatus);
 
-            Transaction tx = new Transaction(
+            transactionDAO.create(new Transaction(
                     UUID.randomUUID().toString(),
                     workingWallet.getAccountId(), 0,
                     TransactionType.LOAN_REPAYMENT, repayAmount,
-                    "Loan repayment (loan #" + loan.getLoanId() + ")");
-            transactionDAO.create(tx);
+                    "Loan repayment (loan #" + loan.getLoanId() + ")"));
 
             commit(connection);
             syncAccount(wallet, workingWallet);
@@ -150,7 +150,26 @@ public class LoanService {
         return loanDAO.findByCustomerId(customerId);
     }
 
-    // ── private helpers ──────────────────────────────────────────────────────
+    /**
+     * Returns the applicable loan limit for a customer.
+     * 100,000 RWF by default; 500,000 RWF if total transaction volume > 300,000 RWF.
+     */
+    public BigDecimal getLoanLimit(Customer customer) {
+        return resolveLoanLimit(customer);
+    }
+
+    // ── Private helpers ──────────────────────────────────────────────────────
+
+    private BigDecimal resolveLoanLimit(Customer customer) {
+        BigDecimal totalVolume = customer.getAccounts().stream()
+                .flatMap(a -> transactionDAO.findByAccountId(a.getAccountId()).stream())
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return totalVolume.compareTo(Loan.PREMIUM_TX_THRESHOLD) > 0
+                ? Loan.PREMIUM_LOAN_AMOUNT
+                : Loan.MAX_LOAN_AMOUNT;
+    }
 
     private void validateAmount(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
